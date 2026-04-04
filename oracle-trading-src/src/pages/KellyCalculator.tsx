@@ -214,6 +214,15 @@ export default function KellyCalculator() {
               </div>
             </div>
 
+            {/* Kelly=0% Warning */}
+            {kellyValue === 0 && (
+              <div style={{ padding: 20, borderRadius: 12, background: 'color-mix(in oklab, var(--destructive, #ef4444) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--destructive, #ef4444) 30%, transparent)' }}>
+                <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.7 }}>
+                  <strong className="text-foreground">⚠️ Kelly Criterion = 0%</strong> — The current win rate / profit ratio combination yields a negative or zero expected edge. The formula recommends <strong className="text-foreground">no position</strong>. To generate a positive Kelly value, your win rate and profit ratio must satisfy: <strong className="text-foreground">Win Rate × (Profit / Loss) &gt; Loss Rate</strong>. Try increasing your win rate or profit ratio.
+                </p>
+              </div>
+            )}
+
             {/* Chart — full width below */}
             <div className="card-gold-glow p-6">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -243,9 +252,11 @@ export default function KellyCalculator() {
                     <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false}
                       tickFormatter={v => {
                         const n = v as number;
+                        if (n >= 1000000000000) return `${(n / 1000000000000).toFixed(1)}T`;
+                        if (n >= 1000000000) return `${(n / 1000000000).toFixed(1)}B`;
                         if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
                         if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
-                        return String(n);
+                        return String(Math.round(n));
                       }} />
                     <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #D4AF37', borderRadius: 8 }}
                       itemStyle={{ color: '#D4AF37' }}

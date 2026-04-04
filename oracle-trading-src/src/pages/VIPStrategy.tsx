@@ -45,6 +45,14 @@ export default function VIPStrategy() {
   const [compoundingValue, setCompoundingValue] = useState(12);
   const [compoundingUnit, setCompoundingUnit] = useState<DurationUnit>('month');
 
+  const handleUnitChange = (newUnit: DurationUnit) => {
+    if (newUnit === compoundingUnit) return;
+    const toDays = compoundingUnit === 'day' ? compoundingValue : compoundingUnit === 'month' ? compoundingValue * 30 : compoundingValue * 365;
+    const converted = newUnit === 'day' ? toDays : newUnit === 'month' ? Math.round(toDays / 30) : Math.round(toDays / 365);
+    setCompoundingValue(Math.max(1, Math.min(600, converted)));
+    setCompoundingUnit(newUnit);
+  };
+
   // Base full Kelly calculation
   const fullKellyPct = useMemo(() => {
     const p = winRate / 100;
@@ -195,7 +203,7 @@ export default function VIPStrategy() {
                     className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', alignItems: 'center' }}>
                     {(['day', 'month', 'year'] as DurationUnit[]).map(u => (
-                      <button key={u} onClick={() => setCompoundingUnit(u)} style={{ borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', padding: '6px 4px', background: compoundingUnit === u ? '#fff' : 'transparent', color: compoundingUnit === u ? '#000' : '#fff' }}>
+                      <button key={u} onClick={() => handleUnitChange(u)} className="notranslate" style={{ borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', padding: '6px 4px', background: compoundingUnit === u ? '#fff' : 'transparent', color: compoundingUnit === u ? '#000' : '#fff' }}>
                         {u === 'day' ? 'Day' : u === 'month' ? 'Mon' : 'Yr'}
                       </button>
                     ))}
@@ -291,9 +299,11 @@ export default function VIPStrategy() {
                     <YAxis stroke="#888" fontSize={11} tickLine={false} axisLine={false}
                       tickFormatter={v => {
                         const n = v as number;
+                        if (n >= 1000000000000) return `${(n / 1000000000000).toFixed(1)}T`;
+                        if (n >= 1000000000) return `${(n / 1000000000).toFixed(1)}B`;
                         if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
                         if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
-                        return String(n);
+                        return String(Math.round(n));
                       }} />
                     <Tooltip
                       contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #D4AF37', borderRadius: 8 }}
