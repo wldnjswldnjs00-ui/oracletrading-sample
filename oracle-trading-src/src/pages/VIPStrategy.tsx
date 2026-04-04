@@ -218,7 +218,7 @@ export default function VIPStrategy() {
                     }}>
                       <div>
                         <span style={{ fontSize: 14, fontWeight: 800 }}>{label}</span>
-                        <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 8, opacity: 0.75 }} translate="no">({sublabel})</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 8, opacity: 0.75 }}>({sublabel})</span>
                       </div>
                       <span className="font-mono notranslate" style={{ fontSize: 22, fontWeight: 900 }}>{val.toFixed(2)}%</span>
                     </button>

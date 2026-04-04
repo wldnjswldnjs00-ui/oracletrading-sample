@@ -55,11 +55,17 @@ export default function KellyCalculator() {
     let capital = startingCapital;
     const fraction = kellyValue / 100;
     const p = winRate / 100;
-    const ev = fraction * (p * (profitRatio / lossRatio) - (1 - p));
+    const q = 1 - p;
+    const b = profitRatio / lossRatio;
+    // Geometric growth factor per trade: (1 + f*b)^p * (1 - f)^q
+    // This is the correct Kelly compounding formula (log-growth maximization)
+    const perTrade = fraction > 0
+      ? Math.pow(1 + fraction * b, p) * Math.pow(Math.max(1 - fraction, 0.0001), q)
+      : 1;
     const count = Math.max(1, Math.min(simulatorTrades, 500)); // cap at 500 for performance
     for (let i = 0; i <= count; i++) {
       data.push({ trade: `T${i}`, capital: Math.round(capital) });
-      capital = capital * (1 + ev);
+      capital = capital * perTrade;
     }
     return data;
   }, [kellyValue, winRate, profitRatio, lossRatio, startingCapital, simulatorTrades]);
