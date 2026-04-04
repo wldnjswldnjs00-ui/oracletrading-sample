@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowLeft, Shield } from 'lucide-react';
 
@@ -15,7 +16,8 @@ export default function PrivacyPolicy() {
     };
   }, []);
 
-  const sections = [
+  const linkStyle = { color: 'var(--gold)', textDecoration: 'underline' };
+  const sections: { title: string; content: string | ReactNode }[] = [
     {
       title: '1. Information We Collect',
       content: `Oracle Trading does not collect any personally identifiable information (PII) directly. However, third-party services integrated into this website may collect certain data automatically:
@@ -45,14 +47,16 @@ You can control or disable cookies through your browser settings. Note that disa
     },
     {
       title: '4. Third-Party Services',
-      content: `Oracle Trading uses the following third-party services, each governed by their own privacy policies:
-
-• Google Analytics (analytics.google.com/policies/privacy)
-• Google AdSense (policies.google.com/privacy)
-• Google Fonts (fonts.google.com)
-• Cloudflare Pages (cloudflare.com/privacypolicy)
-
-We encourage you to review the privacy policies of these third-party providers.`,
+      content: (
+        <span style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-line' }} className="text-muted-foreground">
+          {'Oracle Trading uses the following third-party services, each governed by their own privacy policies:\n\n'}
+          {'• Google Analytics — '}<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>policies.google.com/privacy</a>{'\n'}
+          {'• Google AdSense — '}<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>policies.google.com/privacy</a>{'\n'}
+          {'• Google Fonts — '}<a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" style={linkStyle}>fonts.google.com</a>{'\n'}
+          {'• Cloudflare Pages — '}<a href="https://www.cloudflare.com/privacypolicy" target="_blank" rel="noopener noreferrer" style={linkStyle}>cloudflare.com/privacypolicy</a>{'\n\n'}
+          {'We encourage you to review the privacy policies of these third-party providers.'}
+        </span>
+      ),
     },
     {
       title: '5. Data Retention',
@@ -120,7 +124,10 @@ We will respond to your inquiry within a reasonable timeframe.`,
           {sections.map((section, i) => (
             <div key={i} style={{ borderBottom: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', paddingBottom: 32 }}>
               <h3 className="text-foreground" style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{section.title}</h3>
-              <p className="text-muted-foreground" style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-line' }}>{section.content}</p>
+              {typeof section.content === 'string'
+                ? <p className="text-muted-foreground" style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-line' }}>{section.content}</p>
+                : <div>{section.content}</div>
+              }
             </div>
           ))}
         </div>

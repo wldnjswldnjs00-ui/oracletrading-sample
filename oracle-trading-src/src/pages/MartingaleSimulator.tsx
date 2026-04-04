@@ -119,6 +119,7 @@ export default function MartingaleSimulator() {
                     <div>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Drawdown per Level (%)</label>
                       <input type="number" value={drawdownPct} min={0} max={99} onChange={e => setDrawdownPct(Math.max(0, Math.min(99, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                      <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Price drop % before each level entry (0–99%)</p>
                     </div>
                     <div>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Target Profit (%)</label>

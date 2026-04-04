@@ -35,7 +35,7 @@ const tools = [
 
 const features = [
   { title: 'Precision Calculations', description: 'Advanced mathematical models for accurate financial projections and risk assessment.' },
-  { title: 'Real-time Visualization', description: 'Interactive charts and graphs showing growth trajectories and risk scenarios.' },
+  { title: 'Interactive Visualization', description: 'Instant charts and graphs showing growth trajectories and risk scenarios.' },
   { title: 'Integrated Strategy', description: 'Combine multiple calculation methods for comprehensive investment planning.' },
 ];
 

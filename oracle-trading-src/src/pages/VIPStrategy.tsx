@@ -155,7 +155,7 @@ export default function VIPStrategy() {
               <h2 className="text-foreground" style={{ fontSize: 18, fontWeight: 700 }}>Strategy Configuration</h2>
 
               {[
-                { label: 'Target Monthly Return (%)', value: targetMonthlyReturn, set: (v: number) => setTargetMonthlyReturn(Math.max(0, Math.min(1000, v))), hint: 'Monthly profit goal (e.g. 10%)' },
+                { label: 'Target Monthly Return (%)', value: targetMonthlyReturn, set: (v: number) => setTargetMonthlyReturn(Math.max(0, Math.min(1000, v))), hint: 'Monthly return goal — used to project compounding growth across all time units' },
                 { label: 'Win Rate (%)', value: winRate, set: (v: number) => setWinRate(Math.max(0, Math.min(100, v))), hint: 'Historical win rate (0–100%)' },
                 { label: 'Avg Profit per Win (%)', value: profitRatio, set: (v: number) => setProfitRatio(Math.max(0.1, Math.min(10000, v))), hint: 'Average % gain on winning trades', step: 0.1 },
                 { label: 'Avg Loss per Loss (%)', value: lossRatio, set: (v: number) => setLossRatio(Math.max(0.1, Math.min(10000, v))), hint: 'Average % lost on losing trades', step: 0.1 },
@@ -195,8 +195,8 @@ export default function VIPStrategy() {
                     className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', alignItems: 'center' }}>
                     {(['day', 'month', 'year'] as DurationUnit[]).map(u => (
-                      <button key={u} onClick={() => setCompoundingUnit(u)} style={{ borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', padding: '4px 2px', background: compoundingUnit === u ? '#fff' : 'transparent', color: compoundingUnit === u ? '#000' : '#fff' }}>
-                        {u === 'day' ? 'Day' : u === 'month' ? 'Mon' : 'Year'}
+                      <button key={u} onClick={() => setCompoundingUnit(u)} style={{ borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', padding: '6px 4px', background: compoundingUnit === u ? '#fff' : 'transparent', color: compoundingUnit === u ? '#000' : '#fff' }}>
+                        {u === 'day' ? 'Day' : u === 'month' ? 'Mon' : 'Yr'}
                       </button>
                     ))}
                   </div>

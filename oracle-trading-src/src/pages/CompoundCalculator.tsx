@@ -31,6 +31,14 @@ export default function CompoundCalculator() {
   const [duration, setDuration] = useState(12);
   const [durationUnit, setDurationUnit] = useState<DurationUnit>('Month');
 
+  const handleUnitChange = (newUnit: DurationUnit) => {
+    if (newUnit === durationUnit) return;
+    const toDays = durationUnit === 'Day' ? duration : durationUnit === 'Month' ? duration * 30 : duration * 365;
+    const converted = newUnit === 'Day' ? toDays : newUnit === 'Month' ? Math.round(toDays / 30) : Math.round(toDays / 365);
+    setDuration(Math.max(1, Math.min(600, converted)));
+    setDurationUnit(newUnit);
+  };
+
   const result = useMemo(() => {
     if (!initialInvestment || !duration) return null;
     const r = returnRate / 100;
@@ -95,7 +103,7 @@ export default function CompoundCalculator() {
                       <input type="number" value={duration} min={1} max={600} onChange={e => setDuration(Math.max(1, Math.min(600, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', height: 38 }}>
                         {(['Day', 'Month', 'Year'] as DurationUnit[]).map(u => (
-                          <button key={u} onClick={() => setDurationUnit(u)} style={{ borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', background: durationUnit === u ? '#fff' : 'transparent', color: durationUnit === u ? '#000' : '#fff' }}>{u}</button>
+                          <button key={u} onClick={() => handleUnitChange(u)} style={{ borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', background: durationUnit === u ? '#fff' : 'transparent', color: durationUnit === u ? '#000' : '#fff' }}>{u}</button>
                         ))}
                       </div>
                     </div>
