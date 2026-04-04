@@ -2,60 +2,69 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 50 100% 92%;
-    --card: 222 47% 9%;
-    --primary: 45 100% 55%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 222 47% 14%;
-    --muted: 222 47% 14%;
-    --muted-foreground: 50 20% 60%;
-    --accent: 45 100% 70%;
-    --accent-foreground: 222 47% 6%;
-    --destructive: 0 84% 60%;
-    --border: 222 47% 18%;
-    --input: 222 47% 12%;
-    --gold: 45 100% 55%;
+    --background: oklch(8% .01 0);
+    --foreground: oklch(95% .01 0);
+    --card: oklch(13% .01 280);
+    --card-foreground: oklch(95% .01 0);
+    --sidebar: oklch(10% .01 280);
+    --primary: oklch(80% .2 50);
+    --primary-foreground: oklch(8% .01 0);
+    --secondary: oklch(18% .01 280);
+    --muted: oklch(15% .01 280);
+    --muted-foreground: oklch(70% .01 0);
+    --accent: oklch(70% .2 200);
+    --border: oklch(75% .15 50);
+    --input: oklch(15% .01 280);
+    --ring: oklch(80% .2 50);
+    --sidebar-border: oklch(75% .15 50 / 0.3);
     --radius: 0.5rem;
   }
 }
 
 @layer base {
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
     min-height: 100vh;
   }
-  #root {
-    min-height: 100vh;
+  #root { min-height: 100vh; display: flex; }
+  button, a, input, select, textarea {
+    transition: all 0.3s cubic-bezier(.4,0,.2,1);
   }
 }
 
-/* Utility classes */
-.text-gold { color: hsl(var(--gold)); }
-.text-foreground { color: hsl(var(--foreground)); }
-.text-muted-foreground { color: hsl(var(--muted-foreground)); }
-.text-accent { color: hsl(var(--accent)); }
-.text-destructive { color: hsl(var(--destructive)); }
-.bg-background { background-color: hsl(var(--background)); }
-.bg-card { background-color: hsl(var(--card)); }
-.bg-input { background-color: hsl(var(--input)); }
-
 .card-gold-glow {
-  background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--primary) / 0.2);
+  background-color: var(--card);
+  border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
   border-radius: var(--radius);
-  box-shadow: 0 0 20px hsl(var(--primary) / 0.05);
+  box-shadow: 0 0 20px #ffd7001a, inset 0 0 20px #ffd7000d;
+  transition: all .3s cubic-bezier(.4,0,.2,1);
+}
+.card-gold-glow:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px #ffd70033, inset 0 0 20px #ffd70014;
+}
+
+.btn-gold {
+  border-radius: var(--radius);
+  padding: 12px 24px;
+  font-weight: 600;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 0 15px #ffd70033;
+  cursor: pointer;
+  border: none;
+}
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px #ffd70066;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: hsl(var(--background)); }
-::-webkit-scrollbar-thumb { background: hsl(var(--primary) / 0.3); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.5); }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--primary) 30%, transparent); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--primary) 50%, transparent); }
