@@ -99,7 +99,7 @@ export default function KellyCalculator() {
 
           {/* Content: 4 cols */}
           <div className="lg:col-span-4 space-y-8">
-            {/* Main row: Input (1) + [Kelly + Chart side-by-side] (3) */}
+            {/* Top row: Input (1) + Kelly Selection (3) */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
               {/* Input Parameters */}
               <div className="lg:col-span-1">
@@ -109,14 +109,9 @@ export default function KellyCalculator() {
                   {/* Starting Capital — TOP */}
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Starting Capital</label>
-                    <input
-                      type="number"
-                      value={startingCapital}
-                      min={1}
-                      max={100000000}
+                    <input type="number" value={startingCapital} min={1} max={100000000}
                       onChange={e => setStartingCapital(Math.max(1, Math.min(100000000, parseNum(e.target.value))))}
-                      className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
-                    />
+                      className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                     <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 3 }}>Your initial trading capital (1 – 100,000,000)</p>
                   </div>
 
@@ -128,8 +123,7 @@ export default function KellyCalculator() {
                   ].map(({ label, value, set, hint, step }) => (
                     <div key={label}>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{label}</label>
-                      <input type="number" value={value} step={step}
-                        onChange={e => set(parseNum(e.target.value))}
+                      <input type="number" value={value} step={step} onChange={e => set(parseNum(e.target.value))}
                         className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                       <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 3 }}>{hint}</p>
                     </div>
@@ -142,116 +136,96 @@ export default function KellyCalculator() {
                       How many trades to simulate? Set this to see your projected balance after e.g. 50 or 100 consecutive trades at the Kelly fraction above.
                     </p>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Number of Trades</label>
-                    <input
-                      type="number"
-                      value={simulatorTrades}
-                      min={1}
-                      max={100000000}
+                    <input type="number" value={simulatorTrades} min={1} max={100000000}
                       onChange={e => setSimulatorTrades(Math.max(1, Math.min(100000000, Math.round(parseNum(e.target.value)))))}
-                      className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
-                    />
+                      className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                     <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 3 }}>Range: 1 – 100,000,000 trades</p>
                   </div>
                 </div>
               </div>
 
-              {/* Right 3 cols: Kelly (left) + Chart (right) side by side */}
+              {/* Kelly Fraction Selection — full 3 cols */}
               <div className="lg:col-span-3">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                  {/* Kelly Fraction Selection */}
-                  <div>
-                    <div className="card-gold-glow p-6">
-                      <h3 className="text-foreground" style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Kelly Fraction Selection</h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {kellyOptions.map(({ key, label, sublabel, desc }) => {
-                          const val = kellyValues[key];
-                          const isSelected = selectedKelly === key;
-                          return (
-                            <button
-                              key={key}
-                              onClick={() => setSelectedKelly(key)}
-                              style={{
-                                padding: '20px 24px',
-                                borderRadius: 12,
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                border: isSelected ? '2px solid #B35900' : '2px solid color-mix(in oklab, var(--primary) 20%, transparent)',
-                                background: isSelected ? '#B35900' : 'color-mix(in oklab, var(--primary) 5%, transparent)',
-                                color: isSelected ? '#fff' : 'var(--foreground)',
-                                boxShadow: isSelected ? '0 0 24px rgba(179,89,0,0.35)' : 'none',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                                    <span style={{ fontSize: 16, fontWeight: 800 }}>{label}</span>
-                                    <span style={{
-                                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                                      background: isSelected ? 'rgba(255,255,255,0.2)' : 'color-mix(in oklab, var(--primary) 15%, transparent)',
-                                      color: isSelected ? '#fff' : 'var(--gold)',
-                                    }}>{sublabel}</span>
-                                  </div>
-                                  <p style={{ fontSize: 12, opacity: isSelected ? 0.85 : 0.6, lineHeight: 1.5 }}>{desc}</p>
-                                </div>
-                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <p className="font-mono notranslate" style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-1px' }}>{val.toFixed(2)}%</p>
-                                  <p style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>of capital per trade</p>
-                                </div>
+                <div className="card-gold-glow p-6">
+                  <h3 className="text-foreground" style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Kelly Fraction Selection</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {kellyOptions.map(({ key, label, sublabel, desc }) => {
+                      const val = kellyValues[key];
+                      const isSelected = selectedKelly === key;
+                      return (
+                        <button key={key} onClick={() => setSelectedKelly(key)}
+                          style={{
+                            padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
+                            border: isSelected ? '2px solid #B35900' : '2px solid color-mix(in oklab, var(--primary) 20%, transparent)',
+                            background: isSelected ? '#B35900' : 'color-mix(in oklab, var(--primary) 5%, transparent)',
+                            color: isSelected ? '#fff' : 'var(--foreground)',
+                            boxShadow: isSelected ? '0 0 24px rgba(179,89,0,0.35)' : 'none',
+                            transition: 'all 0.15s ease',
+                          }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                                <span style={{ fontSize: 16, fontWeight: 800 }}>{label}</span>
+                                <span style={{
+                                  fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                                  background: isSelected ? 'rgba(255,255,255,0.2)' : 'color-mix(in oklab, var(--primary) 15%, transparent)',
+                                  color: isSelected ? '#fff' : 'var(--gold)',
+                                }}>{sublabel}</span>
                               </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Chart — beside Kelly buttons */}
-                  <div>
-                    <div className="card-gold-glow p-6">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
-                        <h3 className="text-foreground" style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <TrendingUp style={{ width: 18, height: 18, color: 'var(--gold)', flexShrink: 0 }} />
-                          Expected Growth Projection (<span className="notranslate">{simulatorTrades.toLocaleString()}</span> Trades)
-                        </h3>
-                        <div style={{ display: 'flex', gap: 12, fontSize: 11, flexShrink: 0 }}>
-                          <span className="text-muted-foreground">Start: <span className="text-gold font-mono notranslate">{startingCapital.toLocaleString()}</span></span>
-                          <span className="text-muted-foreground">End: <span className="text-gold font-mono notranslate">{(chartData[chartData.length - 1]?.capital ?? 0).toLocaleString()}</span></span>
-                        </div>
-                      </div>
-                      <p className="text-muted-foreground" style={{ fontSize: 11, marginBottom: 16 }}>
-                        Simulates capital growth over <span className="notranslate">{simulatorTrades.toLocaleString()}</span> trades. Chart updates automatically.
-                      </p>
-                      <div style={{ height: 380, width: '100%' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-                            <defs>
-                              <linearGradient id="kellyGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.35} />
-                                <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                            <XAxis dataKey="trade" stroke="#888" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#888" fontSize={11} tickLine={false} axisLine={false}
-                              tickFormatter={v => {
-                                const n = v as number;
-                                if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-                                if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
-                                return String(n);
-                              }} />
-                            <Tooltip
-                              contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #D4AF37', borderRadius: 8 }}
-                              itemStyle={{ color: '#D4AF37' }}
-                              formatter={(v) => [(v as number).toLocaleString(), 'Capital']}
-                            />
-                            <Area type="monotone" dataKey="capital" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#kellyGrad)" />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+                              <p style={{ fontSize: 12, opacity: isSelected ? 0.85 : 0.6, lineHeight: 1.5 }}>{desc}</p>
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <p className="font-mono notranslate" style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-1px' }}>{val.toFixed(2)}%</p>
+                              <p style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>of capital per trade</p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Chart — full width below */}
+            <div className="card-gold-glow p-6">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <TrendingUp style={{ width: 20, height: 20, color: 'var(--gold)' }} />
+                  Expected Growth Projection (<span className="notranslate">{simulatorTrades.toLocaleString()}</span> Trades)
+                </h3>
+                <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+                  <span className="text-muted-foreground">Starting: <span className="text-gold font-mono notranslate">{startingCapital.toLocaleString()}</span></span>
+                  <span className="text-muted-foreground">Projected: <span className="text-gold font-mono notranslate">{(chartData[chartData.length - 1]?.capital ?? 0).toLocaleString()}</span></span>
+                </div>
+              </div>
+              <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
+                Simulates expected capital growth over <span className="notranslate">{simulatorTrades.toLocaleString()}</span> trades using selected Kelly fraction and your input parameters. Chart updates automatically as you adjust any setting.
+              </p>
+              <div style={{ height: 420, width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                    <defs>
+                      <linearGradient id="kellyGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                    <XAxis dataKey="trade" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false}
+                      tickFormatter={v => {
+                        const n = v as number;
+                        if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+                        if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
+                        return String(n);
+                      }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #D4AF37', borderRadius: 8 }}
+                      itemStyle={{ color: '#D4AF37' }}
+                      formatter={(v) => [(v as number).toLocaleString(), 'Capital']} />
+                    <Area type="monotone" dataKey="capital" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#kellyGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

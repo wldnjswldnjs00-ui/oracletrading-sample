@@ -49,20 +49,37 @@ export default function VIPStrategy() {
   const kellyMultiplier = kellyOptions.find(o => o.key === selectedKelly)?.multiplier ?? 0.5;
   const kellyPct = fullKellyPct * kellyMultiplier;
 
-  // Martingale levels
+  // Martingale levels — position sizes double each level (1, 2, 4, 8...)
   const martingaleData = useMemo(() => {
     const levels = [];
     let totalInvestment = 0;
     let totalShares = 0;
+
+    // Doubling weights: level 1 = 1, level 2 = 2, level 3 = 4, level 4 = 8...
+    const weights = Array.from({ length: entryLevels }, (_, i) => Math.pow(2, i));
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    const totalKellyCapital = (tradingCapital * kellyPct) / 100;
+
     for (let i = 1; i <= entryLevels; i++) {
       const priceAtLevel = currentAssetPrice * (1 - (priceDropPercent / 100) * (i - 1));
-      const investmentPerLevel = (tradingCapital * kellyPct) / (100 * entryLevels);
-      const shares = investmentPerLevel / priceAtLevel;
+      // Investment scales with doubling weight
+      const investmentPerLevel = totalWeight > 0 ? totalKellyCapital * (weights[i - 1] / totalWeight) : 0;
+      const shares = priceAtLevel > 0 ? investmentPerLevel / priceAtLevel : 0;
+
       totalInvestment += investmentPerLevel;
       totalShares += shares;
-      levels.push({ level: i, price: priceAtLevel, shares, investment: investmentPerLevel, percentOfTotal: (investmentPerLevel / tradingCapital) * 100 });
+
+      levels.push({
+        level: i,
+        price: priceAtLevel,
+        shares,
+        investment: investmentPerLevel,
+        percentOfTotal: tradingCapital > 0 ? (investmentPerLevel / tradingCapital) * 100 : 0,
+      });
     }
-    return { levels, totalShares, totalInvestment, averagePrice: totalInvestment / totalShares };
+
+    const averagePrice = totalShares > 0 ? totalInvestment / totalShares : 0;
+    return { levels, totalShares, totalInvestment, averagePrice };
   }, [tradingCapital, currentAssetPrice, entryLevels, priceDropPercent, kellyPct]);
 
   // Chart data — unit-aware labels
