@@ -28,6 +28,7 @@ export default function KellyCalculator() {
   const [lossRatio, setLossRatio] = useState(1);
   const [selectedKelly, setSelectedKelly] = useState<'full' | 'half' | 'quarter'>('half');
   const [startingCapital, setStartingCapital] = useState(10000);
+  const [simulatorTrades, setSimulatorTrades] = useState(20);
 
   const kellyCalculation = useMemo(() => {
     const p = winRate / 100;
@@ -55,12 +56,13 @@ export default function KellyCalculator() {
     const fraction = kellyValue / 100;
     const p = winRate / 100;
     const ev = fraction * (p * (profitRatio / lossRatio) - (1 - p));
-    for (let i = 0; i <= 20; i++) {
+    const count = Math.max(1, Math.min(simulatorTrades, 500)); // cap at 500 for performance
+    for (let i = 0; i <= count; i++) {
       data.push({ trade: `T${i}`, capital: Math.round(capital) });
       capital = capital * (1 + ev);
     }
     return data;
-  }, [kellyValue, winRate, profitRatio, lossRatio, startingCapital]);
+  }, [kellyValue, winRate, profitRatio, lossRatio, startingCapital, simulatorTrades]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -104,6 +106,21 @@ export default function KellyCalculator() {
                 <div className="card-gold-glow p-6 space-y-5">
                   <h2 className="text-foreground" style={{ fontSize: 18, fontWeight: 700 }}>Input Parameters</h2>
 
+                  {/* Starting Capital — TOP */}
+                  <div>
+                    <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Starting Capital</label>
+                    <input
+                      type="number"
+                      value={startingCapital}
+                      min={1}
+                      max={100000000}
+                      onChange={e => setStartingCapital(Math.max(1, Math.min(100000000, parseNum(e.target.value))))}
+                      className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                    />
+                    <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 3 }}>Your initial trading capital (1 – 100,000,000)</p>
+                  </div>
+
+                  {/* Kelly inputs */}
                   {[
                     { label: 'Win Rate (%)', value: winRate, set: (v: number) => setWinRate(Math.max(0, Math.min(100, v))), hint: 'Historical win rate (0–100%)', step: 1 },
                     { label: 'Avg Profit per Win (%)', value: profitRatio, set: (v: number) => setProfitRatio(Math.max(0.1, v)), hint: 'Average % gained when winning', step: 0.1 },
@@ -118,17 +135,22 @@ export default function KellyCalculator() {
                     </div>
                   ))}
 
-                  <div>
-                    <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Starting Capital (Simulator)</label>
+                  {/* Simulator — BOTTOM */}
+                  <div style={{ borderTop: '1px solid color-mix(in oklab, var(--primary) 15%, transparent)', paddingTop: 16 }}>
+                    <h3 className="text-foreground" style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Simulator</h3>
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginBottom: 12, lineHeight: 1.5 }}>
+                      How many trades to simulate? Set this to see your projected balance after e.g. 50 or 100 consecutive trades at the Kelly fraction above.
+                    </p>
+                    <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Number of Trades</label>
                     <input
                       type="number"
-                      value={startingCapital}
+                      value={simulatorTrades}
                       min={1}
                       max={100000000}
-                      onChange={e => setStartingCapital(Math.max(1, Math.min(100000000, parseNum(e.target.value))))}
+                      onChange={e => setSimulatorTrades(Math.max(1, Math.min(100000000, Math.round(parseNum(e.target.value)))))}
                       className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
                     />
-                    <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 3 }}>Range: 1 – 100,000,000</p>
+                    <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 3 }}>Range: 1 – 100,000,000 trades</p>
                   </div>
                 </div>
               </div>
@@ -187,7 +209,7 @@ export default function KellyCalculator() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <TrendingUp style={{ width: 20, height: 20, color: 'var(--gold)' }} />
-                  Expected Growth Projection (20 Trades)
+                  Expected Growth Projection (<span className="notranslate">{simulatorTrades.toLocaleString()}</span> Trades)
                 </h3>
                 <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                   <span className="text-muted-foreground">Starting: <span className="text-gold font-mono notranslate">{startingCapital.toLocaleString()}</span></span>

@@ -20,12 +20,20 @@ export default function MartingaleSimulator() {
   const [drawdownPct, setDrawdownPct] = useState(5);
   const [targetProfit, setTargetProfit] = useState(10);
   const [numberOfLevels, setNumberOfLevels] = useState(4);
+  const [positionSizesText, setPositionSizesText] = useState('1, 2, 4, 8');
   const [availableCapital, setAvailableCapital] = useState(10000);
 
-  // Auto-generate position sizes based on numberOfLevels (doubling: 1, 2, 4, 8...)
+  const handleLevelsChange = (n: number) => {
+    const clamped = Math.max(1, Math.min(10, Math.round(n)));
+    setNumberOfLevels(clamped);
+    const sizes = Array.from({ length: clamped }, (_, i) => Math.pow(2, i));
+    setPositionSizesText(sizes.join(', '));
+  };
+
+  // Parse positionSizesText for computation
   const positionSizes = useMemo(() => {
-    return Array.from({ length: numberOfLevels }, (_, i) => Math.pow(2, i));
-  }, [numberOfLevels]);
+    return positionSizesText.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+  }, [positionSizesText]);
 
   const result = useMemo(() => {
     try {
@@ -92,10 +100,13 @@ export default function MartingaleSimulator() {
                   </div>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Number of Entry Levels</label>
-                    <input type="number" value={numberOfLevels} min={1} max={10} onChange={e => setNumberOfLevels(Math.max(1, Math.min(10, Math.round(parseNum(e.target.value)))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
-                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>
-                      How many times to enter as price drops (1–10). Sizes auto-set: {positionSizes.join(', ')}
-                    </p>
+                    <input type="number" value={numberOfLevels} min={1} max={10} onChange={e => handleLevelsChange(parseNum(e.target.value))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>How many times to enter as price drops (1–10)</p>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Position Sizes (comma separated)</label>
+                    <input type="text" value={positionSizesText} onChange={e => setPositionSizesText(e.target.value)} placeholder="e.g. 1, 2, 4, 8" className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Auto-set from levels above — edit to customize each level's position size</p>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div>

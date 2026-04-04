@@ -120,12 +120,12 @@ export default function VIPStrategy() {
 
       {/* Main Content */}
       <div className="container py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
           {/* Sidebar */}
-          <div className="hidden lg:block"><SidebarAds /></div>
+          <div className="hidden lg:block lg:col-span-1"><SidebarAds /></div>
 
           {/* Input */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <div className="card-gold-glow p-6 sticky top-24 space-y-5">
               <h2 className="text-foreground" style={{ fontSize: 18, fontWeight: 700 }}>Strategy Configuration</h2>
 
@@ -182,7 +182,7 @@ export default function VIPStrategy() {
           </div>
 
           {/* Main: 3 cols */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-6" style={{ minWidth: 0 }}>
             {/* Kelly Selector */}
             <div className="card-gold-glow p-6">
               <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>Kelly Fraction Selection</h3>
