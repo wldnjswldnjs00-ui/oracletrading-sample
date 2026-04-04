@@ -113,7 +113,7 @@ export default function MartingaleSimulator() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Drawdown per Level (%)</label>
-                      <input type="number" value={drawdownPct} onChange={e => setDrawdownPct(Math.max(0, parseNum(e.target.value)))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                      <input type="number" value={drawdownPct} min={0} max={99} onChange={e => setDrawdownPct(Math.max(0, Math.min(99, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                     </div>
                     <div>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Target Profit (%)</label>

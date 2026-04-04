@@ -79,12 +79,12 @@ export default function CompoundCalculator() {
                   </div>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Target Return Rate (%)</label>
-                    <input type="number" value={returnRate} onChange={e => setReturnRate(Math.max(0, parseNum(e.target.value)))} step="0.1" className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                    <input type="number" value={returnRate} min={0} max={1000} onChange={e => setReturnRate(Math.max(0, Math.min(1000, parseNum(e.target.value))))} step="0.1" className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                   </div>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Investment Duration</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
-                      <input type="number" value={duration} onChange={e => setDuration(Math.max(1, parseNum(e.target.value)))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                      <input type="number" value={duration} min={1} max={600} onChange={e => setDuration(Math.max(1, Math.min(600, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', height: 38 }}>
                         {(['Day', 'Month', 'Year'] as DurationUnit[]).map(u => (
                           <button key={u} onClick={() => setDurationUnit(u)} style={{ borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', background: durationUnit === u ? '#fff' : 'transparent', color: durationUnit === u ? '#000' : '#fff' }}>{u}</button>
