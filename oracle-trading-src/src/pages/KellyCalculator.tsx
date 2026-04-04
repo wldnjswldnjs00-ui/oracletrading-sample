@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AdSense } from '../components/AdSense';
 import { SidebarAds } from '../components/SidebarAds';
 import { LearnAbout } from '../components/LearnAbout';
+import { Footer } from '../components/Footer';
 
 const parseNum = (val: string) => { const n = parseFloat(val.replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
 
@@ -82,9 +83,9 @@ export default function KellyCalculator() {
     for (let i = 0; i * step <= simulatorTrades; i++) {
       const tradeNum = Math.min(i * step, simulatorTrades);
       const capital = Math.round(startingCapital * Math.pow(perTrade, tradeNum));
-      const label = tradeNum >= 1000000 ? `T${(tradeNum / 1000000).toFixed(1)}M`
-        : tradeNum >= 1000 ? `T${(tradeNum / 1000).toFixed(0)}k`
-        : `T${tradeNum}`;
+      const label = tradeNum >= 1000000 ? `${(tradeNum / 1000000).toFixed(1)}M`
+        : tradeNum >= 1000 ? `${(tradeNum / 1000).toFixed(0)}k`
+        : `${tradeNum}`;
       data.push({ trade: label, capital });
     }
     return data;
@@ -222,7 +223,7 @@ export default function KellyCalculator() {
                 </h3>
                 <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                   <span className="text-muted-foreground">Starting: <span className="text-gold font-mono notranslate">{startingCapital.toLocaleString()}</span></span>
-                  <span className="text-muted-foreground">Projected: <span className="text-gold font-mono notranslate">{projectedFinalCapital.toLocaleString()}</span></span>
+                  <span className="text-muted-foreground">Projected: <span className="text-gold font-mono notranslate">{isFinite(projectedFinalCapital) ? projectedFinalCapital.toLocaleString() : '∞'}</span></span>
                 </div>
               </div>
               <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
@@ -267,6 +268,7 @@ export default function KellyCalculator() {
       <div className="bg-card/50 py-4 border-t border-primary/20 mt-12">
         <div className="container"><AdSense slot="1234567896" format="horizontal" responsive={true} /></div>
       </div>
+      <Footer />
     </div>
   );
 }

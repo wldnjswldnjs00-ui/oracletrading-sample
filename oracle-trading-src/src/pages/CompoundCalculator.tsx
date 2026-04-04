@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AdSense } from '../components/AdSense';
 import { SidebarAds } from '../components/SidebarAds';
 import { LearnAbout } from '../components/LearnAbout';
+import { Footer } from '../components/Footer';
 
 const learnSections = [
   { title: '📚 What is Compound Interest?', content: 'Compound interest is the process of earning interest on both the principal and accumulated interest — often called "interest on interest." The concept dates back to ancient Mesopotamia (2400 BC) and was formalized by mathematicians in the Renaissance era. Albert Einstein reportedly called it the "eighth wonder of the world," saying "He who understands it, earns it; he who doesn\'t, pays it." Unlike simple interest, which grows linearly, compound interest produces exponential growth over time — meaning your money accelerates faster the longer it remains invested.' },
@@ -183,6 +184,7 @@ export default function CompoundCalculator() {
         </div>
       </div>
       <div className="bg-card/50 py-4 border-t border-primary/20 mt-12"><div className="container"><AdSense slot="1234567892" format="horizontal" responsive={true} /></div></div>
+      <Footer />
     </div>
   );
 }

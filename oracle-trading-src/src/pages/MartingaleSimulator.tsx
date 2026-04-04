@@ -5,6 +5,7 @@ import { ArrowLeft, GitBranch, TrendingUp, AlertCircle } from 'lucide-react';
 import { AdSense } from '../components/AdSense';
 import { SidebarAds } from '../components/SidebarAds';
 import { LearnAbout } from '../components/LearnAbout';
+import { Footer } from '../components/Footer';
 
 const parseNum = (val: string) => { const n = parseFloat(val.replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
 
@@ -222,6 +223,7 @@ export default function MartingaleSimulator() {
       <div className="bg-card/50 py-4 border-t border-primary/20 mt-12">
         <div className="container"><AdSense slot="1234567896" format="horizontal" responsive={true} /></div>
       </div>
+      <Footer />
     </div>
   );
 }
