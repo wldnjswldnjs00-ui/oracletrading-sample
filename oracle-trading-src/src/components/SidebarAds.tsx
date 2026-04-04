@@ -1,11 +1,22 @@
 import { AdSense } from './AdSense';
 
 export function SidebarAds() {
+  const slotStyle = {
+    border: '2px solid #D4AF37',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 16,
+    minHeight: 160,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'color-mix(in oklab, #D4AF37 5%, transparent)',
+  };
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <AdSense slot="1234567890" format="rectangle" />
-      <AdSense slot="1234567891" format="rectangle" />
-      <AdSense slot="1234567892" format="rectangle" />
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={slotStyle}><AdSense slot="1234567890" format="rectangle" /></div>
+      <div style={slotStyle}><AdSense slot="1234567891" format="rectangle" /></div>
+      <div style={slotStyle}><AdSense slot="1234567892" format="rectangle" /></div>
     </div>
   );
 }
