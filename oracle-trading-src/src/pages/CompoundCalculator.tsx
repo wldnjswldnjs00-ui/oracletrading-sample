@@ -155,9 +155,9 @@ export default function CompoundCalculator() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'color-mix(in oklab, var(--primary) 5%, transparent)' }}>
-                      {(['unit', 'Total Asset', 'Profit', 'ROI %'] as const).map((h, idx) => (
+                      {(['Period', 'Total Asset', 'Profit', 'ROI %'] as const).map((h, idx) => (
                         <th key={idx} className="text-muted-foreground" style={{ padding: '16px 24px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)' }}>
-                          {h === 'unit' ? <span className="notranslate">{durationUnit}</span> : h}
+                          {h}
                         </th>
                       ))}
                     </tr>

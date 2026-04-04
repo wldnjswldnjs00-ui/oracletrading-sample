@@ -156,9 +156,9 @@ export default function VIPStrategy() {
               {[
                 { label: 'Target Monthly Return (%)', value: targetMonthlyReturn, set: (v: number) => setTargetMonthlyReturn(Math.max(0, Math.min(1000, v))), hint: 'Monthly profit goal (e.g. 10%)' },
                 { label: 'Win Rate (%)', value: winRate, set: (v: number) => setWinRate(Math.max(0, Math.min(100, v))), hint: 'Historical win rate (0–100%)' },
-                { label: 'Avg Profit per Win (%)', value: profitRatio, set: (v: number) => setProfitRatio(Math.max(0.1, v)), hint: 'Average % gain on winning trades', step: 0.1 },
-                { label: 'Avg Loss per Loss (%)', value: lossRatio, set: (v: number) => setLossRatio(Math.max(0.1, v)), hint: 'Average % lost on losing trades', step: 0.1 },
-                { label: 'Trading Capital', value: tradingCapital, set: (v: number) => setTradingCapital(Math.max(100, v)), hint: 'Total available capital' },
+                { label: 'Avg Profit per Win (%)', value: profitRatio, set: (v: number) => setProfitRatio(Math.max(0.1, Math.min(10000, v))), hint: 'Average % gain on winning trades', step: 0.1 },
+                { label: 'Avg Loss per Loss (%)', value: lossRatio, set: (v: number) => setLossRatio(Math.max(0.1, Math.min(10000, v))), hint: 'Average % lost on losing trades', step: 0.1 },
+                { label: 'Trading Capital', value: tradingCapital, set: (v: number) => setTradingCapital(Math.max(100, Math.min(100000000, v))), hint: 'Total available capital' },
               ].map(({ label, value, set, hint, step }) => (
                 <div key={label}>
                   <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{label}</label>
@@ -172,9 +172,9 @@ export default function VIPStrategy() {
               <div style={{ borderTop: '1px solid color-mix(in oklab, var(--primary) 15%, transparent)', paddingTop: 16 }}>
                 <h3 className="text-foreground" style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Martingale Parameters</h3>
                 {[
-                  { label: 'Market Price', value: currentAssetPrice, set: (v: number) => setCurrentAssetPrice(Math.max(0.01, v)), hint: 'Current asset price', step: 0.01 },
+                  { label: 'Market Price', value: currentAssetPrice, set: (v: number) => setCurrentAssetPrice(Math.max(0.01, Math.min(10000000, v))), hint: 'Current asset price', step: 0.01 },
                   { label: 'Number of Entry Levels', value: entryLevels, set: (v: number) => setEntryLevels(Math.max(1, Math.min(10, Math.round(v)))), hint: 'How many times to buy as price drops (1–10)' },
-                  { label: 'Price Drop Between Entries (%)', value: priceDropPercent, set: (v: number) => setPriceDropPercent(Math.max(0.1, v)), hint: 'Buy again when price drops this %', step: 0.5 },
+                  { label: 'Price Drop Between Entries (%)', value: priceDropPercent, set: (v: number) => setPriceDropPercent(Math.max(0.1, Math.min(99, v))), hint: 'Buy again when price drops this % (0.1–99%)', step: 0.5 },
                 ].map(({ label, value, set, hint, step }) => (
                   <div key={label} style={{ marginBottom: 16 }}>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{label}</label>

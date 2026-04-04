@@ -62,10 +62,7 @@ export default function MartingaleSimulator() {
       const breakEvenPrice = avgPrice;
       const profitAtTarget = totalUnits * avgPrice * (1 + targetProfit / 100) - totalCapitalRequired;
       const capitalOk = totalCapitalRequired <= availableCapital;
-      const riskAssessment = capitalOk
-        ? `Strategy fits within your capital. Average entry: ${avgPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}. Break-even at ${breakEvenPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}.`
-        : `Strategy requires ${totalCapitalRequired.toLocaleString('en-US', { maximumFractionDigits: 0 })} but only ${availableCapital.toLocaleString('en-US', { maximumFractionDigits: 0 })} available. Reduce position sizes or levels.`;
-      return { levels, totalCapitalRequired, breakEvenPrice, profitAtTarget, riskAssessment, capitalOk };
+      return { levels, totalCapitalRequired, breakEvenPrice, profitAtTarget, capitalOk, avgPrice };
     } catch { return null; }
   }, [entryPrice, drawdownPct, targetProfit, positionSizes, availableCapital]);
 
@@ -105,7 +102,7 @@ export default function MartingaleSimulator() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Current Entry Price</label>
-                    <input type="number" value={entryPrice} onChange={e => setEntryPrice(Math.max(0, parseNum(e.target.value)))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                    <input type="number" value={entryPrice} onChange={e => setEntryPrice(Math.max(0, Math.min(100000000, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                   </div>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Number of Entry Levels</label>
@@ -124,12 +121,12 @@ export default function MartingaleSimulator() {
                     </div>
                     <div>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Target Profit (%)</label>
-                      <input type="number" value={targetProfit} onChange={e => setTargetProfit(Math.max(0, parseNum(e.target.value)))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                      <input type="number" value={targetProfit} onChange={e => setTargetProfit(Math.max(0, Math.min(1000, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                     </div>
                   </div>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Available Capital</label>
-                    <input type="number" value={availableCapital} onChange={e => setAvailableCapital(Math.max(0, parseNum(e.target.value)))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                    <input type="number" value={availableCapital} onChange={e => setAvailableCapital(Math.max(0, Math.min(100000000, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                   </div>
                 </div>
               </div>
@@ -166,7 +163,13 @@ export default function MartingaleSimulator() {
                 {result && (
                   <div style={{ padding: 16, borderRadius: 8, background: 'color-mix(in oklab, var(--primary) 5%, transparent)', border: '1px solid color-mix(in oklab, var(--primary) 20%, transparent)', display: 'flex', gap: 12 }}>
                     <AlertCircle style={{ width: 20, height: 20, color: 'var(--gold)', flexShrink: 0 }} />
-                    <p className="text-muted-foreground" style={{ fontSize: 13 }}>{result.riskAssessment}</p>
+                    <p className="text-muted-foreground" style={{ fontSize: 13 }}>
+                      {result.capitalOk ? (
+                        <>Strategy fits within your capital. Average entry: <span className="notranslate">{result.avgPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>. Break-even at <span className="notranslate">{result.breakEvenPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>.</>
+                      ) : (
+                        <>Strategy requires <span className="notranslate">{result.totalCapitalRequired.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> but only <span className="notranslate">{availableCapital.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> available. Reduce position sizes or levels.</>
+                      )}
+                    </p>
                   </div>
                 )}
               </div>

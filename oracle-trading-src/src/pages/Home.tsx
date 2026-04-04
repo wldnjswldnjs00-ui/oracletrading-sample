@@ -5,10 +5,9 @@ const tools = [
   {
     id: 'compound',
     title: 'Compound Interest Calculator',
-    description: 'Calculate asset growth with regular investments and compound returns over time.',
+    description: 'See how your investment grows exponentially through compound interest over time.',
     icon: <ChartColumn size={32} />,
     path: '/compound-calculator',
-    color: 'from-blue-400 to-cyan-500',
   },
   {
     id: 'kelly',
@@ -16,7 +15,6 @@ const tools = [
     description: 'Determine optimal position sizing based on your win rate and risk-reward ratio.',
     icon: <ChartColumn size={32} />,
     path: '/kelly-calculator',
-    color: 'from-green-400 to-emerald-500',
   },
   {
     id: 'martingale',
@@ -24,7 +22,6 @@ const tools = [
     description: 'Simulate pyramid entry strategy with custom drawdown levels and position scaling.',
     icon: <GitBranch size={32} />,
     path: '/martingale-simulator',
-    color: 'from-orange-400 to-red-500',
   },
   {
     id: 'vip',
@@ -32,7 +29,6 @@ const tools = [
     description: 'Integrated solution combining Kelly, Martingale, and compound interest for optimal returns.',
     icon: <Crown size={32} />,
     path: '/vip-strategy',
-    color: 'from-yellow-300 to-amber-500',
     isVip: true,
   },
 ];
@@ -120,7 +116,7 @@ export default function Home() {
 
       {/* Tool Cards */}
       <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 32 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 32 }}>
           {tools.map((tool, i) => (
             <div
               key={tool.id}
