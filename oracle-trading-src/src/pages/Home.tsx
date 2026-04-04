@@ -103,7 +103,7 @@ export default function Home() {
 
       {/* Tool Cards */}
       <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 32 }}>
           {tools.map((tool, i) => (
             <div
               key={tool.id}
