@@ -32,7 +32,9 @@ export default function MartingaleSimulator() {
 
   // Parse positionSizesText for computation
   const positionSizes = useMemo(() => {
-    return positionSizesText.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+    // Support both comma-separated (1, 2, 4) and semicolon-separated (for European locales where comma = decimal)
+    const separator = positionSizesText.includes(';') ? ';' : ',';
+    return positionSizesText.split(separator).map(s => parseFloat(s.trim().replace(',', '.'))).filter(n => !isNaN(n) && n > 0);
   }, [positionSizesText]);
 
   const result = useMemo(() => {
@@ -106,7 +108,7 @@ export default function MartingaleSimulator() {
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Position Sizes (comma separated)</label>
                     <input type="text" value={positionSizesText} onChange={e => setPositionSizesText(e.target.value)} placeholder="e.g. 1, 2, 4, 8" className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
-                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Auto-set from levels above — edit to customize each level's position size</p>
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Auto-set from levels above — edit to customize. Use semicolons (;) if comma is your decimal separator.</p>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div>

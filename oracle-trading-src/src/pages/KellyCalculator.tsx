@@ -187,7 +187,7 @@ export default function KellyCalculator() {
                                   fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
                                   background: isSelected ? 'rgba(255,255,255,0.2)' : 'color-mix(in oklab, var(--primary) 15%, transparent)',
                                   color: isSelected ? '#fff' : 'var(--gold)',
-                                }}>{sublabel}</span>
+                                }} translate="no">{sublabel}</span>
                               </div>
                               <p style={{ fontSize: 12, opacity: isSelected ? 0.85 : 0.6, lineHeight: 1.5 }}>{desc}</p>
                             </div>
@@ -217,7 +217,7 @@ export default function KellyCalculator() {
                 </div>
               </div>
               <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
-                Simulates expected capital growth over 20 trades using selected Kelly fraction and your input parameters.
+                Simulates expected capital growth over <span className="notranslate">{simulatorTrades.toLocaleString()}</span> trades using selected Kelly fraction and your input parameters.
                 Chart updates automatically as you adjust any setting.
               </p>
               <div style={{ height: 420, width: '100%' }}>

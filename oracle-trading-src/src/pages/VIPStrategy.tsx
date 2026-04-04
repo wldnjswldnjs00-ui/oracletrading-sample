@@ -171,7 +171,7 @@ export default function VIPStrategy() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', alignItems: 'center' }}>
                     {(['day', 'month', 'year'] as DurationUnit[]).map(u => (
                       <button key={u} onClick={() => setCompoundingUnit(u)} style={{ borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', padding: '4px 2px', background: compoundingUnit === u ? '#fff' : 'transparent', color: compoundingUnit === u ? '#000' : '#fff' }}>
-                        {u === 'day' ? 'Day' : u === 'month' ? 'Mo' : 'Yr'}
+                        {u === 'day' ? 'Day' : u === 'month' ? 'Mon' : 'Year'}
                       </button>
                     ))}
                   </div>
@@ -201,7 +201,7 @@ export default function VIPStrategy() {
                     }}>
                       <div>
                         <span style={{ fontSize: 14, fontWeight: 800 }}>{label}</span>
-                        <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 8, opacity: 0.75 }}>({sublabel})</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, marginLeft: 8, opacity: 0.75 }} translate="no">({sublabel})</span>
                       </div>
                       <span className="font-mono notranslate" style={{ fontSize: 22, fontWeight: 900 }}>{val.toFixed(2)}%</span>
                     </button>
