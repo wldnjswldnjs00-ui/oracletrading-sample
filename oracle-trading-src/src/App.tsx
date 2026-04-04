@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Router, Route, Switch } from 'wouter';
+import { Router, Route, Switch, useLocation } from 'wouter';
 
 const Home = lazy(() => import('./pages/Home'));
 const CompoundCalculator = lazy(() => import('./pages/CompoundCalculator'));
@@ -7,6 +7,18 @@ const KellyCalculator = lazy(() => import('./pages/KellyCalculator'));
 const MartingaleSimulator = lazy(() => import('./pages/MartingaleSimulator'));
 const VIPStrategy = lazy(() => import('./pages/VIPStrategy'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+
+function NotFound() {
+  const [, navigate] = useLocation();
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-6">
+      <p className="text-muted-foreground" style={{ fontSize: 18 }}>Page not found</p>
+      <button onClick={() => navigate('/')} style={{ padding: '10px 24px', borderRadius: 8, background: 'color-mix(in oklab, var(--primary) 20%, transparent)', border: '1px solid color-mix(in oklab, var(--primary) 40%, transparent)', color: 'var(--gold)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+        ← Back to Home
+      </button>
+    </div>
+  );
+}
 
 function PageLoader() {
   return (
@@ -28,9 +40,7 @@ export default function App() {
           <Route path="/vip-strategy" component={VIPStrategy} />
           <Route path="/privacy-policy" component={PrivacyPolicy} />
           <Route>
-            <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-              <p>Page not found</p>
-            </div>
+            <NotFound />
           </Route>
         </Switch>
       </Suspense>

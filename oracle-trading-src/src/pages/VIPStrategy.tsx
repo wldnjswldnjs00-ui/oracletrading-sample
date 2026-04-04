@@ -69,7 +69,7 @@ export default function VIPStrategy() {
     const totalKellyCapital = (tradingCapital * kellyPct) / 100;
 
     for (let i = 1; i <= entryLevels; i++) {
-      const priceAtLevel = Math.max(0, currentAssetPrice * (1 - (priceDropPercent / 100) * (i - 1)));
+      const priceAtLevel = currentAssetPrice * Math.pow(1 - priceDropPercent / 100, i - 1);
       // Investment scales with doubling weight
       const investmentPerLevel = totalWeight > 0 ? totalKellyCapital * (weights[i - 1] / totalWeight) : 0;
       const shares = priceAtLevel > 0 ? investmentPerLevel / priceAtLevel : 0;
@@ -316,6 +316,13 @@ export default function VIPStrategy() {
             {/* Strategy Execution Walkthrough */}
             <div className="card-gold-glow p-6">
               <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>Strategy Execution Walkthrough</h3>
+              {kellyPct === 0 ? (
+                <div style={{ padding: 16, borderRadius: 8, background: 'color-mix(in oklab, var(--destructive, #ef4444) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--destructive, #ef4444) 30%, transparent)' }}>
+                  <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.6 }}>
+                    <strong className="text-foreground">⚠️ Kelly Criterion = 0%</strong> — The current win rate / profit ratio combination yields a negative or zero edge. The strategy recommends <strong className="text-foreground">no position</strong>. Adjust your win rate or profit ratio to generate a positive expected value before executing this strategy.
+                  </p>
+                </div>
+              ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
                   { step: 1, text: <><strong className="text-foreground">Entry (Level 1):</strong> Buy <span className="notranslate">{martingaleData.levels[0]?.shares.toFixed(4) ?? '—'}</span> units at <span className="notranslate">{currentAssetPrice.toFixed(2)}</span> → Deploy <span className="notranslate">{martingaleData.levels[0]?.investment.toFixed(0) ?? '—'}</span></> },
@@ -329,6 +336,7 @@ export default function VIPStrategy() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         </div>

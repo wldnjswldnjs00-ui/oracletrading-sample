@@ -48,7 +48,7 @@ export default function MartingaleSimulator() {
   const result = useMemo(() => {
     try {
       const sizes = positionSizes;
-      if (sizes.length === 0 || !entryPrice || !drawdownPct) return null;
+      if (sizes.length === 0 || !entryPrice) return null;
       const levels = sizes.map((size, i) => {
         const price = entryPrice * Math.pow(1 - drawdownPct / 100, i);
         const avgPriceNumerator = sizes.slice(0, i + 1).reduce((sum, s, j) => sum + s * entryPrice * Math.pow(1 - drawdownPct / 100, j), 0);
@@ -104,6 +104,7 @@ export default function MartingaleSimulator() {
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Current Entry Price</label>
                     <input type="number" value={entryPrice} onChange={e => setEntryPrice(Math.max(0, Math.min(100000000, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Current market price of the asset you plan to enter</p>
                   </div>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Number of Entry Levels</label>
@@ -124,11 +125,13 @@ export default function MartingaleSimulator() {
                     <div>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Target Profit (%)</label>
                       <input type="number" value={targetProfit} onChange={e => setTargetProfit(Math.max(0, Math.min(1000, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                      <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Exit profit target above avg price (0–1000%)</p>
                     </div>
                   </div>
                   <div>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Available Capital</label>
                     <input type="number" value={availableCapital} onChange={e => setAvailableCapital(Math.max(0, Math.min(100000000, parseNum(e.target.value))))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Total capital available — used to check if strategy is feasible</p>
                   </div>
                 </div>
               </div>
