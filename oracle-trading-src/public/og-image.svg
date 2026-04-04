@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A0E27"/>
+      <stop offset="100%" stop-color="#0f1535"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#F5D06A"/>
+    </linearGradient>
+    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="210" x2="1200" y2="210" stroke="#D4AF37" stroke-opacity="0.05" stroke-width="1"/>
+  <line x1="0" y1="420" x2="1200" y2="420" stroke="#D4AF37" stroke-opacity="0.05" stroke-width="1"/>
+  <line x1="400" y1="0" x2="400" y2="630" stroke="#D4AF37" stroke-opacity="0.05" stroke-width="1"/>
+  <line x1="800" y1="0" x2="800" y2="630" stroke="#D4AF37" stroke-opacity="0.05" stroke-width="1"/>
+
+  <!-- Chart area (right side background) -->
+  <rect x="640" y="80" width="480" height="310" rx="16" fill="#D4AF37" fill-opacity="0.03" stroke="#D4AF37" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- Chart curve fill -->
+  <path d="M 660 340 L 700 320 L 760 300 L 820 270 L 880 230 L 940 180 L 1000 140 L 1060 110 L 1100 100 L 1100 360 L 660 360 Z" fill="url(#chartGrad)"/>
+
+  <!-- Chart curve line -->
+  <path d="M 660 340 L 700 320 L 760 300 L 820 270 L 880 230 L 940 180 L 1000 140 L 1060 110 L 1100 100" fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <!-- Chart dots -->
+  <circle cx="700" cy="320" r="4" fill="#D4AF37"/>
+  <circle cx="820" cy="270" r="4" fill="#D4AF37"/>
+  <circle cx="940" cy="180" r="4" fill="#D4AF37"/>
+  <circle cx="1060" cy="110" r="5" fill="#F5D06A" filter="url(#glow)"/>
+
+  <!-- Left content -->
+  <!-- Logo badge -->
+  <rect x="80" y="100" width="56" height="56" rx="12" fill="#D4AF37" fill-opacity="0.15" stroke="#D4AF37" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="108" y="138" font-family="serif" font-size="20" font-weight="700" fill="#D4AF37" text-anchor="middle">OT</text>
+
+  <!-- Brand name -->
+  <text x="80" y="220" font-family="Georgia, serif" font-size="52" font-weight="800" fill="white">Oracle</text>
+  <text x="80" y="278" font-family="Georgia, serif" font-size="52" font-weight="800" fill="url(#gold)">Trading</text>
+
+  <!-- Divider line -->
+  <rect x="80" y="300" width="60" height="3" rx="2" fill="url(#gold)"/>
+
+  <!-- Tagline -->
+  <text x="80" y="340" font-family="Arial, sans-serif" font-size="18" fill="#8892b0">Investment Strategy Calculator</text>
+
+  <!-- Feature tags -->
+  <rect x="80" y="375" width="165" height="34" rx="17" fill="#D4AF37" fill-opacity="0.12" stroke="#D4AF37" stroke-opacity="0.25" stroke-width="1"/>
+  <text x="163" y="397" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#D4AF37" text-anchor="middle">Compound Interest</text>
+
+  <rect x="255" y="375" width="140" height="34" rx="17" fill="#D4AF37" fill-opacity="0.12" stroke="#D4AF37" stroke-opacity="0.25" stroke-width="1"/>
+  <text x="325" y="397" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#D4AF37" text-anchor="middle">Kelly Criterion</text>
+
+  <rect x="80" y="420" width="140" height="34" rx="17" fill="#D4AF37" fill-opacity="0.12" stroke="#D4AF37" stroke-opacity="0.25" stroke-width="1"/>
+  <text x="150" y="442" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#D4AF37" text-anchor="middle">Martingale Sim</text>
+
+  <rect x="230" y="420" width="130" height="34" rx="17" fill="#D4AF37" fill-opacity="0.12" stroke="#D4AF37" stroke-opacity="0.25" stroke-width="1"/>
+  <text x="295" y="442" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#D4AF37" text-anchor="middle">VIP Strategy</text>
+
+  <!-- URL -->
+  <text x="80" y="530" font-family="Arial, sans-serif" font-size="16" fill="#D4AF37" fill-opacity="0.6">oracletrading.site</text>
+
+  <!-- Free badge -->
+  <rect x="80" y="555" width="80" height="28" rx="14" fill="#D4AF37" fill-opacity="0.15" stroke="#D4AF37" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="120" y="574" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#D4AF37" text-anchor="middle">✨ FREE</text>
+</svg>

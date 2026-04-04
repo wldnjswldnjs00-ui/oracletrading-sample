@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { ArrowLeft, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AdSense } from '../components/AdSense';
@@ -18,6 +19,12 @@ const parseNum = (val: string) => { const n = parseFloat(val.replace(/[^0-9.\-]/
 
 export default function CompoundCalculator() {
   const [, navigate] = useLocation();
+  usePageMeta(
+    'Compound Interest Calculator | Oracle Trading',
+    'Calculate compound interest growth with our free calculator. Visualize exponential growth with Day/Month/Year breakdowns. See exactly how your investment compounds over time.',
+    'Compound Interest Calculator - Oracle Trading',
+    'Free compound interest calculator. Enter your investment, return rate, and duration to see how money grows exponentially. Includes interactive chart and period-by-period breakdown table.'
+  );
   const [initialInvestment, setInitialInvestment] = useState(10000);
   const [returnRate, setReturnRate] = useState(10);
   const [duration, setDuration] = useState(12);

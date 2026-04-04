@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { ArrowLeft, AlertCircle, Crown } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AdSense } from '../components/AdSense';
@@ -25,6 +26,12 @@ type DurationUnit = 'day' | 'month' | 'year';
 
 export default function VIPStrategy() {
   const [, navigate] = useLocation();
+  usePageMeta(
+    'VIP Integrated Strategy | Oracle Trading',
+    'Combine Kelly Criterion and Martingale pyramid for an integrated trading strategy. Optimize position sizing and entry levels together. Includes compound growth projection with Day/Month/Year simulation.',
+    'VIP Integrated Strategy - Kelly + Martingale | Oracle Trading',
+    'Advanced VIP trading strategy combining Kelly Criterion position sizing with Martingale pyramid entries. Calculate optimal entry levels, investment allocation, and long-term compounding growth projection.'
+  );
   const [targetMonthlyReturn, setTargetMonthlyReturn] = useState(10);
   const [winRate, setWinRate] = useState(60);
   const [profitRatio, setProfitRatio] = useState(2);

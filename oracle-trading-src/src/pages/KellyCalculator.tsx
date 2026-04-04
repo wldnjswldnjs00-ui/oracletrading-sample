@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { ArrowLeft, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AdSense } from '../components/AdSense';
@@ -23,6 +24,12 @@ const kellyOptions = [
 
 export default function KellyCalculator() {
   const [, navigate] = useLocation();
+  usePageMeta(
+    'Kelly Criterion Calculator | Oracle Trading',
+    'Calculate optimal position sizing with the Kelly Criterion formula. Enter your win rate and profit/loss ratio to find the mathematically perfect bet size. Full, Half, and Quarter Kelly options.',
+    'Kelly Criterion Calculator - Oracle Trading',
+    'Free Kelly Criterion calculator for traders and investors. Find your optimal position size using the Kelly formula f* = (p×b − q)/b. Includes growth projection simulator for up to 100M trades.'
+  );
   const [winRate, setWinRate] = useState(60);
   const [profitRatio, setProfitRatio] = useState(2);
   const [lossRatio, setLossRatio] = useState(1);

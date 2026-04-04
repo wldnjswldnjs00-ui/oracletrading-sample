@@ -188,6 +188,11 @@ export default function Home() {
         <div className="container" style={{ paddingTop: 32, paddingBottom: 32, textAlign: 'center' }}>
           <p className="text-muted-foreground" style={{ fontSize: 13 }}>Oracle Trading © 2026. Professional Investment Strategy Calculator.</p>
           <p className="text-muted-foreground" style={{ fontSize: 12, marginTop: 8 }}>Disclaimer: For educational purposes only. Always consult with a financial advisor.</p>
+          <div style={{ marginTop: 16 }}>
+            <button onClick={() => navigate('/privacy-policy')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: 12, textDecoration: 'underline', opacity: 0.7 }}>
+              Privacy Policy
+            </button>
+          </div>
         </div>
       </footer>
     </div>

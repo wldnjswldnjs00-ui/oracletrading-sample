@@ -4,6 +4,7 @@ import CompoundCalculator from './pages/CompoundCalculator';
 import KellyCalculator from './pages/KellyCalculator';
 import MartingaleSimulator from './pages/MartingaleSimulator';
 import VIPStrategy from './pages/VIPStrategy';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/kelly-calculator" component={KellyCalculator} />
         <Route path="/martingale-simulator" component={MartingaleSimulator} />
         <Route path="/vip-strategy" component={VIPStrategy} />
+        <Route path="/privacy-policy" component={PrivacyPolicy} />
         <Route>
           <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
             <p>Page not found</p>

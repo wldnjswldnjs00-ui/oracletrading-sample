@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { ArrowLeft, GitBranch, TrendingUp, AlertCircle } from 'lucide-react';
 import { AdSense } from '../components/AdSense';
 import { SidebarAds } from '../components/SidebarAds';
@@ -16,6 +17,12 @@ const learnSections = [
 
 export default function MartingaleSimulator() {
   const [, navigate] = useLocation();
+  usePageMeta(
+    'Martingale Simulator | Oracle Trading',
+    'Simulate Martingale pyramid entry strategies with custom drawdown levels and position sizing. Calculate average entry price, break-even point, and profit targets for your trading strategy.',
+    'Martingale Strategy Simulator - Oracle Trading',
+    'Free Martingale simulator for traders. Enter your position sizes (1-2-4-8) and drawdown levels to calculate average entry price, total capital required, and profit at target. Includes position entry schedule.'
+  );
   const [entryPrice, setEntryPrice] = useState(100);
   const [drawdownPct, setDrawdownPct] = useState(5);
   const [targetProfit, setTargetProfit] = useState(10);
