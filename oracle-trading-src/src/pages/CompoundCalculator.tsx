@@ -138,13 +138,15 @@ export default function CompoundCalculator() {
             </div>
             <div className="bg-card/50 py-4 border-y border-primary/20" style={{ marginLeft: '-1.5rem', marginRight: '-1.5rem', paddingLeft: '1.5rem', paddingRight: '1.5rem' }}><AdSense slot="1234567893" format="horizontal" responsive={true} /></div>
             <div className="card-gold-glow" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: 24 }}><h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700 }}>{durationUnit}-by-{durationUnit} Breakdown</h3></div>
+              <div style={{ padding: 24 }}><h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700 }}><span className="notranslate">{durationUnit}</span>-by-<span className="notranslate">{durationUnit}</span> Breakdown</h3></div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'color-mix(in oklab, var(--primary) 5%, transparent)' }}>
-                      {[durationUnit, 'Total Asset', 'Profit', 'ROI %'].map(h => (
-                        <th key={h} className="text-muted-foreground" style={{ padding: '16px 24px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)' }}>{h}</th>
+                      {(['unit', 'Total Asset', 'Profit', 'ROI %'] as const).map((h, idx) => (
+                        <th key={idx} className="text-muted-foreground" style={{ padding: '16px 24px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)' }}>
+                          {h === 'unit' ? <span className="notranslate">{durationUnit}</span> : h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
