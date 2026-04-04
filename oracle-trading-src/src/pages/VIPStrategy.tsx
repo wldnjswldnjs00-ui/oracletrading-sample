@@ -1,304 +1,341 @@
 import { useState, useMemo } from 'react';
-import { Star, TrendingUp } from 'lucide-react';
-import {
-  XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Area, AreaChart,
-} from 'recharts';
-import { useNumberInput } from '../hooks/useNumberInput';
-import { calculateKelly, calculateVIPMartingale, calculateGrowthProjection } from '../lib/calculations';
-import { PageHeader, InputField, AlertCard, inputStyle, selectStyle } from '../components/Layout';
-
-type PeriodUnit = 'Day' | 'Month' | 'Year';
+import { useLocation } from 'wouter';
+import { ArrowLeft, TrendingUp, AlertCircle, Crown } from 'lucide-react';
+import { AdSense } from '../components/AdSense';
+import { SidebarAds } from '../components/SidebarAds';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function VIPStrategy() {
-  const targetReturn = useNumberInput(10);
-  const winRate = useNumberInput(55);
-  const avgWin = useNumberInput(2);
-  const avgLoss = useNumberInput(1);
-  const capitalInput = useNumberInput(10000);
-  const priceInput = useNumberInput(100);
-  const levelsInput = useNumberInput(4);
-  const dropInput = useNumberInput(5);
+  const [, navigate] = useLocation();
+  const [targetMonthlyReturn, setTargetMonthlyReturn] = useState(10);
+  const [winRate, setWinRate] = useState(60);
+  const [profitRatio, setProfitRatio] = useState(2);
+  const [lossRatio, setLossRatio] = useState(1);
+  const [tradingCapital, setTradingCapital] = useState(10000);
+  const [currentAssetPrice, setCurrentAssetPrice] = useState(100);
+  const [entryLevels, setEntryLevels] = useState(4);
+  const [priceDropPercent, setPriceDropPercent] = useState(5);
 
-  // ③ Period setting inputs
-  const periodValueInput = useNumberInput(12);
-  const [periodUnit, setPeriodUnit] = useState<PeriodUnit>('Month');
+  // Compounding Duration Settings
+  const [compoundingValue, setCompoundingValue] = useState(12);
+  const [compoundingUnit, setCompoundingUnit] = useState<'day' | 'month' | 'year'>('month');
 
-  const p = Math.min(100, Math.max(0, winRate.value));
-  const aw = Math.max(0.01, avgWin.value);
-  const al = Math.max(0.01, avgLoss.value);
-  const capital = Math.max(0, capitalInput.value);
-  const price = Math.max(0.01, priceInput.value);
-  const levels = Math.max(1, Math.min(10, Math.round(levelsInput.value)));
-  const drop = Math.min(99, Math.max(0.01, dropInput.value));
-  const periodValue = Math.max(1, Math.round(periodValueInput.value));
+  // Chrome translation safe number parser
+  const parseNum = (val: string) => {
+    const n = parseFloat(val.replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? 0 : n;
+  };
 
-  const kelly = useMemo(() => calculateKelly(p, aw, al), [p, aw, al]);
-  const halfKellyFraction = kelly.halfKelly; // use half kelly for VIP
-  const isNegative = kelly.fullKelly === 0 && (p / 100) * (aw / al) - (1 - p / 100) < 0;
+  // Calculate Kelly Criterion
+  const kellyCalculation = useMemo(() => {
+    const p = winRate / 100;
+    const q = 1 - p;
+    const b = profitRatio / lossRatio;
+    const fullKelly = (p * b - q) / b;
+    return Math.max(0, (fullKelly / 2) * 100); // Half Kelly
+  }, [winRate, profitRatio, lossRatio]);
 
-  const martingaleResult = useMemo(
-    () => calculateVIPMartingale(capital, halfKellyFraction, price, levels, drop),
-    [capital, halfKellyFraction, price, levels, drop]
-  );
+  // Martingale calculation
+  const martingaleData = useMemo(() => {
+    const levels = [];
+    let totalInvestment = 0;
+    let totalShares = 0;
 
-  const exceedsCapital = martingaleResult.totalInvested > capital;
-  const remainingCapital = Math.max(0, capital - martingaleResult.totalInvested);
+    for (let i = 1; i <= entryLevels; i++) {
+      const priceAtLevel = currentAssetPrice * (1 - (priceDropPercent / 100) * (i - 1));
+      const investmentPerLevel = (tradingCapital * kellyCalculation) / (100 * entryLevels);
+      const shares = investmentPerLevel / priceAtLevel;
 
-  // ③ Dynamic growth projection — uses capital, targetReturn, periodValue, periodUnit
-  const projectionData = useMemo(
-    () => calculateGrowthProjection(capital, targetReturn.value, periodValue, periodUnit),
-    [capital, targetReturn.value, periodValue, periodUnit]
-  );
+      totalInvestment += investmentPerLevel;
+      totalShares += shares;
 
-  // ③ Dynamic title based on user settings
-  const projectionTitle = `${periodValue}-${periodUnit} Growth Projection`;
+      levels.push({
+        level: i,
+        price: priceAtLevel,
+        shares: shares,
+        investment: investmentPerLevel,
+        percentOfTotal: (investmentPerLevel / tradingCapital) * 100
+      });
+    }
 
-  const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    const averagePrice = totalInvestment / totalShares;
+
+    return {
+      levels,
+      totalShares,
+      totalInvestment,
+      averagePrice
+    };
+  }, [tradingCapital, currentAssetPrice, entryLevels, priceDropPercent, kellyCalculation]);
+
+  // Convert compounding duration to days
+  const compoundingDays = useMemo(() => {
+    switch (compoundingUnit) {
+      case 'day':
+        return compoundingValue;
+      case 'month':
+        return compoundingValue * 30;
+      case 'year':
+        return compoundingValue * 365;
+      default:
+        return 30;
+    }
+  }, [compoundingValue, compoundingUnit]);
+
+  // Monthly projection
+  const monthlyProjection = useMemo(() => {
+    const projections = [];
+    const monthlyRate = targetMonthlyReturn / 100;
+    const dailyRate = Math.pow(1 + monthlyRate, 1 / 30) - 1;
+
+    for (let day = 0; day <= compoundingDays; day++) {
+      const balance = tradingCapital * Math.pow(1 + dailyRate, day);
+      const profit = balance - tradingCapital;
+      const month = Math.ceil(day / 30);
+
+      if (day % 30 === 0 || day === compoundingDays) {
+        projections.push({
+          day,
+          month,
+          balance,
+          profit
+        });
+      }
+    }
+
+    return projections;
+  }, [tradingCapital, targetMonthlyReturn, compoundingDays]);
+
+  // Chart data for growth visualization
+  const chartData = useMemo(() => {
+    return monthlyProjection.map((proj) => ({
+      name: `Day ${proj.day}`,
+      balance: Math.round(proj.balance),
+      profit: Math.round(proj.profit)
+    }));
+  }, [monthlyProjection]);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'hsl(222 47% 6%)', color: 'hsl(50 100% 92%)' }}>
-      <PageHeader
-        title="VIP Integrated Strategy"
-        subtitle="Kelly Criterion + Martingale Pyramid Combined"
-        icon={<Star size={20} />}
-        isVip
-      />
-
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 220px 1fr', gap: 24 }}>
-
-          {/* ===== LEFT: Strategy Configuration ===== */}
-          <div className="card-gold-glow" style={{ padding: 20, alignSelf: 'start', position: 'sticky', top: 88 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'hsl(50 100% 92%)' }}>Strategy Configuration</h2>
-
-            <InputField label="Target Monthly Return (%)" hint="Your monthly profit goal (e.g., 10% per month)">
-              <input ref={targetReturn.ref} type="number" value={targetReturn.value} onChange={targetReturn.onChange} onInput={targetReturn.onInput} step="0.5" translate="no" style={inputStyle} />
-            </InputField>
-
-            <InputField label="Win Rate (%)" hint="Your historical win rate (0–100%)">
-              <input ref={winRate.ref} type="number" value={winRate.value} onChange={winRate.onChange} onInput={winRate.onInput} min="0" max="100" step="1" translate="no" style={inputStyle} />
-            </InputField>
-
-            <InputField label="Avg Profit per Win (%)" hint="Average profit when you win">
-              <input ref={avgWin.ref} type="number" value={avgWin.value} onChange={avgWin.onChange} onInput={avgWin.onInput} min="0.01" step="0.1" translate="no" style={inputStyle} />
-            </InputField>
-
-            <InputField label="Avg Loss per Loss (%)" hint="Average loss when you lose">
-              <input ref={avgLoss.ref} type="number" value={avgLoss.value} onChange={avgLoss.onChange} onInput={avgLoss.onInput} min="0.01" step="0.1" translate="no" style={inputStyle} />
-            </InputField>
-
-            <InputField label="Total Trading Capital" hint="Your total available trading capital">
-              <input ref={capitalInput.ref} type="number" value={capitalInput.value} onChange={capitalInput.onChange} onInput={capitalInput.onInput} min="0" translate="no" style={inputStyle} />
-            </InputField>
-
-            {/* Martingale Parameters section */}
-            <div style={{ borderTop: '1px solid hsl(45 100% 55% / 0.2)', paddingTop: 20, marginTop: 4 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: 'hsl(50 100% 92%)' }}>Martingale Parameters</h3>
-
-              <InputField label="Current Price per Unit" hint="Current price of the stock / coin / asset">
-                <input ref={priceInput.ref} type="number" value={priceInput.value} onChange={priceInput.onChange} onInput={priceInput.onInput} min="0.01" step="0.01" translate="no" style={inputStyle} />
-              </InputField>
-
-              <InputField label="Number of Entry Levels" hint="How many times to buy as price drops (1–10)">
-                <input ref={levelsInput.ref} type="number" value={levelsInput.value} onChange={levelsInput.onChange} onInput={levelsInput.onInput} min="1" max="10" step="1" translate="no" style={inputStyle} />
-              </InputField>
-
-              <InputField label="Price Drop Between Entries (%)" hint="Buy again when price drops this much (e.g., 5% = buy at -5%, -10%, -15%)">
-                <input ref={dropInput.ref} type="number" value={dropInput.value} onChange={dropInput.onChange} onInput={dropInput.onInput} min="0.01" max="99" step="0.5" translate="no" style={inputStyle} />
-              </InputField>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header */}
+      <header className="border-b border-primary/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container py-4 flex items-center gap-4">
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gold" />
+          </button>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-gold" />
+              <h1 className="text-2xl font-bold text-foreground">VIP Integrated Strategy</h1>
             </div>
+            <p className="text-xs text-muted-foreground">Kelly Criterion + Martingale Pyramid Combined</p>
+          </div>
+        </div>
+      </header>
 
-            {/* ③ Period Setting — added at bottom of Strategy Configuration */}
-            <div style={{ borderTop: '1px solid hsl(45 100% 55% / 0.2)', paddingTop: 20, marginTop: 4 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: 'hsl(50 100% 92%)' }}>Projection Period</h3>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  ref={periodValueInput.ref}
-                  type="number"
-                  value={periodValueInput.value}
-                  onChange={periodValueInput.onChange}
-                  onInput={periodValueInput.onInput}
-                  min="1"
-                  translate="no"
-                  style={{ ...inputStyle, width: 80 }}
-                />
-                <select
-                  value={periodUnit}
-                  onChange={e => setPeriodUnit(e.target.value as PeriodUnit)}
-                  style={selectStyle}
-                >
-                  <option value="Day">Day</option>
-                  <option value="Month">Month</option>
-                  <option value="Year">Year</option>
-                </select>
+      {/* Top Banner Ad */}
+      <div className="bg-card/50 py-4 border-b border-primary/20">
+        <div className="container">
+          <AdSense slot="1234567899" format="horizontal" responsive={true} />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Sidebar Ads */}
+          <div className="hidden lg:block">
+            <SidebarAds />
+          </div>
+
+          {/* Left: Input Form */}
+          <div className="lg:col-span-1">
+            <div className="card-gold-glow p-6 sticky top-24 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold mb-6 text-foreground">Strategy Configuration</h2>
+
+                {/* Target Monthly Return */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Target Monthly Return (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={targetMonthlyReturn}
+                    onChange={(e) => setTargetMonthlyReturn(parseNum(e.target.value))}
+                    step="0.5"
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Your monthly profit goal (e.g., 10% per month)</p>
+                </div>
+
+                {/* Win Rate */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Win Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={winRate}
+                    onChange={(e) => setWinRate(Math.max(0, Math.min(100, parseNum(e.target.value))))}
+                    step="1"
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Your historical win rate (0-100%)</p>
+                </div>
+
+                {/* Profit Ratio */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Avg Profit per Win (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={profitRatio}
+                    onChange={(e) => setProfitRatio(Math.max(0.1, parseNum(e.target.value)))}
+                    step="0.1"
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Average profit when you win</p>
+                </div>
+
+                {/* Loss Ratio */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Avg Loss per Loss (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={lossRatio}
+                    onChange={(e) => setLossRatio(Math.max(0.1, parseNum(e.target.value)))}
+                    step="0.1"
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Average loss when you lose</p>
+                </div>
+
+                {/* Trading Capital */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Trading Capital
+                  </label>
+                  <input
+                    type="number"
+                    value={tradingCapital}
+                    onChange={(e) => setTradingCapital(Math.max(100, parseNum(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Your total available trading capital</p>
+                </div>
               </div>
-              <p style={{ fontSize: 12, color: 'hsl(50 20% 60%)', marginTop: 6 }}>
-                Chart will show {periodValue}-{periodUnit} projection
-              </p>
+
+              <div className="border-t border-primary/20 pt-6">
+                <h3 className="text-lg font-bold mb-6 text-foreground">Martingale Parameters</h3>
+
+                {/* Market Price */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Market Price
+                  </label>
+                  <input
+                    type="number"
+                    value={currentAssetPrice}
+                    onChange={(e) => setCurrentAssetPrice(Math.max(0.01, parseNum(e.target.value)))}
+                    step="0.01"
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Current price of the stock / coin / asset</p>
+                </div>
+
+                {/* Entry Levels */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Number of Entry Levels
+                  </label>
+                  <input
+                    type="number"
+                    value={entryLevels}
+                    onChange={(e) => setEntryLevels(Math.max(1, Math.min(10, parseNum(e.target.value))))}
+                    step="1"
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">How many times to buy as price drops (1-10)</p>
+                </div>
+
+                {/* Price Drop Percent */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-muted-foreground mb-2">
+                    Price Drop Between Entries (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={priceDropPercent}
+                    onChange={(e) => setPriceDropPercent(Math.max(0.1, parseNum(e.target.value)))}
+                    step="0.5"
+                    className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Buy again when price drops this %</p>
+                </div>
+              </div>
+
+              {/* Compounding Duration Settings */}
+              <div className="border-t border-primary/20 pt-6">
+                <h3 className="text-lg font-bold mb-6 text-foreground">Compounding Duration</h3>
+                <div className="flex gap-2 mb-4">
+                  <input
+                    type="number"
+                    value={compoundingValue}
+                    onChange={(e) => setCompoundingValue(Math.max(1, parseNum(e.target.value)))}
+                    step="1"
+                    className="flex-1 px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  />
+                  <select
+                    value={compoundingUnit}
+                    onChange={(e) => setCompoundingUnit(e.target.value as 'day' | 'month' | 'year')}
+                    className="px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary"
+                  >
+                    <option value="day">Day</option>
+                    <option value="month">Month</option>
+                    <option value="year">Year</option>
+                  </select>
+                </div>
+                <p className="text-xs text-muted-foreground">Set your compounding period for growth projections</p>
+              </div>
             </div>
           </div>
 
-          {/* ===== MIDDLE: Entry Levels ===== */}
-          <div className="card-gold-glow" style={{ padding: 20, alignSelf: 'start', position: 'sticky', top: 88 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'hsl(50 100% 92%)' }}>Entry Levels</h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 400, overflowY: 'auto' }}>
-              {martingaleResult.levels.map(l => (
-                <div key={l.level} style={{ background: 'hsl(45 100% 55% / 0.1)', padding: 12, borderRadius: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'hsl(45 100% 55%)' }}>Level {l.level}</span>
-                    <span style={{ fontSize: 12, color: 'hsl(45 100% 70%)', fontFamily: 'monospace' }} translate="no">{l.price.toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'hsl(50 20% 60%)' }}>Quantity:</span>
-                      <span style={{ fontFamily: 'monospace', color: 'hsl(50 100% 92%)' }} translate="no">{l.shares.toFixed(2)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'hsl(50 20% 60%)' }}>Capital:</span>
-                      <span style={{ fontFamily: 'monospace', color: 'hsl(45 100% 55%)' }} translate="no">{l.investment.toFixed(0)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'hsl(50 20% 60%)' }}>% of Total:</span>
-                      <span style={{ fontFamily: 'monospace', color: 'hsl(45 100% 70%)' }} translate="no">{l.percentOfTotal.toFixed(1)}%</span>
-                    </div>
-                  </div>
+          {/* Center: Entry Levels Detail */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="card-gold-glow p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-foreground">Optimized Entry Levels</h3>
+                <div className="px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold">
+                  Half Kelly Applied
                 </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid hsl(45 100% 55% / 0.2)', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-              {[
-                { label: 'Total Quantity:', value: martingaleResult.totalShares.toFixed(2), color: 'hsl(45 100% 55%)' },
-                { label: 'Total Capital:', value: fmt(martingaleResult.totalInvested), color: 'hsl(45 100% 55%)' },
-                { label: 'Avg Entry Price:', value: martingaleResult.averagePrice.toFixed(2), color: 'hsl(45 100% 70%)' },
-              ].map(r => (
-                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'hsl(50 20% 60%)' }}>{r.label}</span>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: r.color }} translate="no">{r.value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* ③ Dynamic Growth Chart — inserted below the Martingale Entry Levels table */}
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid hsl(45 100% 55% / 0.2)' }}>
-              <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: 'hsl(50 100% 92%)' }}>
-                {projectionTitle}
-              </h4>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={projectionData} margin={{ top: 4, right: 4, bottom: 4, left: 0 }}>
-                  <defs>
-                    <linearGradient id="vipGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(45 100% 55%)" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="hsl(45 100% 55%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 47% 18%)" />
-                  <XAxis
-                    dataKey="label"
-                    stroke="hsl(50 20% 60%)"
-                    tick={{ fill: 'hsl(50 20% 60%)', fontSize: 10 }}
-                    interval={Math.ceil(projectionData.length / 5) - 1}
-                  />
-                  <YAxis
-                    stroke="hsl(50 20% 60%)"
-                    tick={{ fill: 'hsl(50 20% 60%)', fontSize: 10 }}
-                    tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
-                    width={45}
-                  />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'hsl(222 47% 9%)', border: '1px solid hsl(45 100% 55% / 0.3)', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: 'hsl(50 100% 92%)' }}
-                    formatter={(v) => [(v as number).toLocaleString('en-US', { maximumFractionDigits: 0 }), 'Balance']}
-                  />
-                  <Area type="monotone" dataKey="balance" stroke="hsl(45 100% 55%)" fill="url(#vipGrad)" strokeWidth={2} dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* ===== RIGHT: Main Results ===== */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {isNegative && (
-              <AlertCard type="error" title="Negative Expected Value" message="With these parameters, the Kelly Criterion recommends 0% position size. Adjust your win rate or profit/loss ratio before trading." />
-            )}
-            {exceedsCapital && (
-              <AlertCard type="warning" title="Strategy Exceeds Available Capital" message="The strategy requires more capital than available. Reduce entry levels or increase capital." />
-            )}
-
-            {/* Key metrics */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-              <div className="card-gold-glow" style={{ padding: 20 }}>
-                <p style={{ fontSize: 12, color: 'hsl(50 20% 60%)', marginBottom: 8 }}>Kelly Fraction (Half)</p>
-                <p style={{ fontSize: 28, fontWeight: 700, color: 'hsl(45 100% 55%)', fontFamily: 'monospace' }} translate="no">{halfKellyFraction.toFixed(2)}%</p>
-                <p style={{ fontSize: 12, color: 'hsl(45 100% 70%)', marginTop: 8 }}>Position size per trade</p>
               </div>
-              <div className="card-gold-glow" style={{ padding: 20 }}>
-                <p style={{ fontSize: 12, color: 'hsl(50 20% 60%)', marginBottom: 8 }}>Break-Even Price</p>
-                <p style={{ fontSize: 28, fontWeight: 700, color: 'hsl(45 100% 55%)', fontFamily: 'monospace' }} translate="no">{martingaleResult.breakEvenPrice.toFixed(2)}</p>
-                <p style={{ fontSize: 12, color: 'hsl(45 100% 70%)', marginTop: 8 }} translate="no">
-                  {martingaleResult.breakEvenPrice > price
-                    ? `↑ ${((martingaleResult.breakEvenPrice / price - 1) * 100).toFixed(1)}% above current`
-                    : `↓ ${((1 - martingaleResult.breakEvenPrice / price) * 100).toFixed(1)}% below current`}
-                </p>
-              </div>
-              <div className="card-gold-glow" style={{ padding: 20 }}>
-                <p style={{ fontSize: 12, color: 'hsl(50 20% 60%)', marginBottom: 8 }}>Total Capital Required</p>
-                <p style={{ fontSize: 28, fontWeight: 700, color: 'hsl(45 100% 55%)', fontFamily: 'monospace' }} translate="no">{fmt(martingaleResult.totalInvested)}</p>
-                <p style={{ fontSize: 12, color: 'hsl(45 100% 70%)', marginTop: 8 }}>For all {levels} entry levels</p>
-              </div>
-              <div className="card-gold-glow" style={{ padding: 20 }}>
-                <p style={{ fontSize: 12, color: 'hsl(50 20% 60%)', marginBottom: 8 }}>Available Capital</p>
-                <p style={{ fontSize: 28, fontWeight: 700, fontFamily: 'monospace', color: exceedsCapital ? 'hsl(0 84% 60%)' : 'hsl(45 100% 55%)' }} translate="no">
-                  {fmt(remainingCapital)}
-                </p>
-                <p style={{ fontSize: 12, color: 'hsl(45 100% 70%)', marginTop: 8 }}>Remaining after strategy</p>
-              </div>
-            </div>
 
-            {/* How This Strategy Works */}
-            <div className="card-gold-glow" style={{ padding: 20, borderLeft: '4px solid hsl(45 100% 55%)' }}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <TrendingUp size={16} style={{ color: 'hsl(45 100% 55%)', flexShrink: 0, marginTop: 2 }} />
-                <h4 style={{ fontSize: 13, fontWeight: 700, color: 'hsl(50 100% 92%)', margin: 0 }}>How This Strategy Works</h4>
-              </div>
-              <div style={{ fontSize: 12, color: 'hsl(50 20% 60%)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <p>
-                  <strong style={{ color: 'hsl(50 100% 92%)' }}>1. First Entry:</strong>{' '}
-                  Buy <span translate="no">{martingaleResult.levels[0]?.shares.toFixed(2) ?? '0'}</span> units at{' '}
-                  <span translate="no">{price.toFixed(2)}</span>
-                </p>
-                <p>
-                  <strong style={{ color: 'hsl(50 100% 92%)' }}>2. If Price Drops <span translate="no">{drop}%</span>:</strong>{' '}
-                  Buy <span translate="no">{martingaleResult.levels[1]?.shares.toFixed(2) ?? '0'}</span> more units at{' '}
-                  <span translate="no">{martingaleResult.levels[1]?.price.toFixed(2) ?? '0'}</span>
-                </p>
-                <p>
-                  <strong style={{ color: 'hsl(50 100% 92%)' }}>3. Continue:</strong> Repeat for all <span translate="no">{levels}</span> levels
-                </p>
-                <p>
-                  <strong style={{ color: 'hsl(50 100% 92%)' }}>4. Exit:</strong>{' '}
-                  When price reaches <span translate="no">{martingaleResult.breakEvenPrice.toFixed(2)}</span> (break-even), sell all units
-                </p>
-              </div>
-            </div>
-
-            {/* ③ Dynamic Projection — table view + chart title changes */}
-            <div className="card-gold-glow" style={{ padding: 20 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'hsl(50 100% 92%)' }}>
-                {projectionTitle}
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, maxHeight: 200, overflowY: 'auto' }}>
-                {projectionData.map(d => (
-                  <div key={d.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'hsl(45 100% 55% / 0.08)', borderRadius: 6 }}>
-                    <span style={{ color: 'hsl(50 20% 60%)' }}>{d.label}</span>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: 'monospace', fontWeight: 600, color: 'hsl(50 100% 92%)' }} translate="no">
-                        {fmt(d.balance)}
+              <div className="space-y-4">
+                {martingaleData.levels.map((level) => (
+                  <div key={level.level} className="bg-primary/5 p-4 rounded-xl border border-primary/10">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm font-bold text-gold">Level {level.level}</span>
+                      <span className="text-sm font-mono text-accent">{level.price.toFixed(2)}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Shares</p>
+                        <p className="font-mono font-bold text-foreground">{level.shares.toFixed(2)}</p>
                       </div>
-                      <div style={{ color: d.profit >= 0 ? 'hsl(120 60% 50%)' : 'hsl(0 84% 60%)' }} translate="no">
-                        {d.profit >= 0 ? '+' : ''}{fmt(d.profit)}
+                      <div>
+                        <p className="text-muted-foreground mb-1">Investment</p>
+                        <p className="font-mono font-bold text-foreground">{level.investment.toFixed(0)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-muted-foreground mb-1">% of Strategy</p>
+                        <p className="font-mono font-bold text-accent">{level.percentOfTotal.toFixed(1)}%</p>
                       </div>
                     </div>
                   </div>
@@ -306,23 +343,167 @@ export default function VIPStrategy() {
               </div>
             </div>
 
-            {/* Important Notes */}
-            <div className="card-gold-glow" style={{ padding: 20, borderLeft: '4px solid hsl(45 100% 55%)' }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <TrendingUp size={16} style={{ color: 'hsl(45 100% 55%)', flexShrink: 0, marginTop: 2 }} />
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: 'hsl(50 100% 92%)', marginBottom: 4 }}>Important Notes</p>
-                  <p style={{ fontSize: 12, color: 'hsl(50 20% 60%)', lineHeight: 1.6 }}>
-                    This strategy requires sufficient capital to execute all <span translate="no">{levels}</span> levels.
-                    If price continues falling beyond your capital limit, you cannot execute all entries.
-                    Use this as a guideline and adjust parameters based on your risk tolerance.
-                    Always consult with a financial advisor before trading.
-                  </p>
+            {/* Martingale Entry Levels Breakdown Table */}
+            <div className="card-gold-glow p-6">
+              <h3 className="text-lg font-bold mb-6 text-foreground">Martingale Entry Levels Breakdown</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-primary/20">
+                      <th className="text-left py-2 px-2 text-muted-foreground font-semibold">Level</th>
+                      <th className="text-right py-2 px-2 text-muted-foreground font-semibold">Price</th>
+                      <th className="text-right py-2 px-2 text-muted-foreground font-semibold">Shares</th>
+                      <th className="text-right py-2 px-2 text-muted-foreground font-semibold">Investment</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {martingaleData.levels.map((level) => (
+                      <tr key={level.level} className="border-b border-primary/10 hover:bg-primary/5">
+                        <td className="py-2 px-2 text-foreground font-mono">{level.level}</td>
+                        <td className="text-right py-2 px-2 text-accent font-mono">{level.price.toFixed(2)}</td>
+                        <td className="text-right py-2 px-2 text-foreground font-mono">{level.shares.toFixed(2)}</td>
+                        <td className="text-right py-2 px-2 text-gold font-mono font-bold">{level.investment.toFixed(0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Compounding Growth Chart */}
+            <div className="card-gold-glow p-6">
+              <h3 className="text-lg font-bold mb-6 text-foreground">
+                {compoundingValue}-{compoundingUnit === 'day' ? 'Day' : compoundingUnit === 'month' ? 'Month' : 'Year'} Compounding Growth
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#ffffff40" 
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="#ffffff40" 
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => value.toLocaleString()}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#1a1f3a',
+                      border: '1px solid #d4af37',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => (value as number).toLocaleString()}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="balance" 
+                    stroke="#d4af37" 
+                    dot={false}
+                    strokeWidth={2}
+                    name="Total Balance"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="profit" 
+                    stroke="#10b981" 
+                    dot={false}
+                    strokeWidth={2}
+                    name="Profit"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Strategy Execution Walkthrough */}
+            <div className="card-gold-glow p-6">
+              <h3 className="text-lg font-bold mb-6 text-foreground">Strategy Execution Walkthrough</h3>
+              <div className="space-y-4 text-xs text-muted-foreground leading-relaxed">
+                <div className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-primary/20 text-gold flex items-center justify-center flex-shrink-0 font-bold">1</span>
+                  <p><strong className="text-foreground">Entry (Level 1):</strong> Buy {martingaleData.levels[0].shares.toFixed(2)} units at {currentAssetPrice.toFixed(2)} → Deploy {martingaleData.levels[0].investment.toFixed(0)}</p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-primary/20 text-gold flex items-center justify-center flex-shrink-0 font-bold">2</span>
+                  <p><strong className="text-foreground">After {priceDropPercent}% drop:</strong> Price reaches {(currentAssetPrice * (1 - priceDropPercent / 100)).toFixed(2)} → Buy {martingaleData.levels[1].shares.toFixed(2)} more units</p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-primary/20 text-gold flex items-center justify-center flex-shrink-0 font-bold">3</span>
+                  <p><strong className="text-foreground">Continue:</strong> Repeat for all {entryLevels} levels, accumulating {martingaleData.totalShares.toFixed(2)} total units</p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-primary/20 text-gold flex items-center justify-center flex-shrink-0 font-bold">4</span>
+                  <p><strong className="text-foreground">Exit target:</strong> Sell all {martingaleData.totalShares.toFixed(2)} units at {martingaleData.averagePrice.toFixed(2)} or above → Recover full investment</p>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Right: Projections */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="card-gold-glow p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <TrendingUp className="w-5 h-5 text-gold" />
+                <h3 className="text-lg font-bold text-foreground">
+                  {compoundingValue}-{compoundingUnit === 'day' ? 'Day' : compoundingUnit === 'month' ? 'Month' : 'Year'} Projection
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                {monthlyProjection.slice(-5).map((proj) => (
+                  <div key={proj.day} className="flex justify-between items-center py-2 border-b border-primary/10 last:border-0">
+                    <div>
+                      <p className="text-xs font-bold text-foreground">
+                        {compoundingUnit === 'day' ? `Day ${proj.day}` : `Month ${proj.month}`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">+{((proj.balance / tradingCapital - 1) * 100).toFixed(0)}% total</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gold font-mono">{proj.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                      <p className="text-[10px] text-green-500 font-mono">+{proj.profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 p-4 bg-gold/5 rounded-xl border border-gold/10">
+                <div className="flex gap-3">
+                  <AlertCircle className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Projections assume consistent {targetMonthlyReturn}% monthly growth through strategy execution. Past performance does not guarantee future results.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Kelly Summary */}
+            <div className="card-gold-glow p-5">
+              <h3 className="text-sm font-bold mb-3 text-foreground">Kelly Parameters</h3>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Win Rate:</span>
+                  <span className="text-accent font-mono">{winRate}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Risk-Reward:</span>
+                  <span className="text-accent font-mono">1:{(profitRatio / lossRatio).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Half Kelly:</span>
+                  <span className="text-gold font-mono font-bold">{kellyCalculation.toFixed(2)}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Banner Ad */}
+      <div className="bg-card/50 py-4 border-t border-primary/20 mt-12">
+        <div className="container">
+          <AdSense slot="1234567896" format="horizontal" responsive={true} />
         </div>
       </div>
     </div>
