@@ -126,7 +126,12 @@ export default function CompoundCalculator() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
                       <XAxis dataKey="period" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `${((v as number) / 1000).toFixed(0)}k`} />
+                      <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => {
+                        const n = v as number;
+                        if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+                        if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
+                        return String(Math.round(n));
+                      }} />
                       <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #D4AF37', borderRadius: 8 }} itemStyle={{ color: '#D4AF37' }} formatter={(v) => [(v as number).toLocaleString(), 'Balance']} />
                       <Area type="monotone" dataKey="balance" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
                     </AreaChart>

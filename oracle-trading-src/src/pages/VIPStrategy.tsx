@@ -147,7 +147,7 @@ export default function VIPStrategy() {
               <h2 className="text-foreground" style={{ fontSize: 18, fontWeight: 700 }}>Strategy Configuration</h2>
 
               {[
-                { label: 'Target Monthly Return (%)', value: targetMonthlyReturn, set: (v: number) => setTargetMonthlyReturn(v), hint: 'Monthly profit goal (e.g. 10%)' },
+                { label: 'Target Monthly Return (%)', value: targetMonthlyReturn, set: (v: number) => setTargetMonthlyReturn(Math.max(0, Math.min(1000, v))), hint: 'Monthly profit goal (e.g. 10%)' },
                 { label: 'Win Rate (%)', value: winRate, set: (v: number) => setWinRate(Math.max(0, Math.min(100, v))), hint: 'Historical win rate (0–100%)' },
                 { label: 'Avg Profit per Win (%)', value: profitRatio, set: (v: number) => setProfitRatio(Math.max(0.1, v)), hint: 'Average % gain on winning trades', step: 0.1 },
                 { label: 'Avg Loss per Loss (%)', value: lossRatio, set: (v: number) => setLossRatio(Math.max(0.1, v)), hint: 'Average % lost on losing trades', step: 0.1 },
@@ -182,8 +182,8 @@ export default function VIPStrategy() {
               <div style={{ borderTop: '1px solid color-mix(in oklab, var(--primary) 15%, transparent)', paddingTop: 16 }}>
                 <h3 className="text-foreground" style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Compounding Duration</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
-                  <input type="number" value={compoundingValue} min={1}
-                    onChange={e => setCompoundingValue(Math.max(1, parseNum(e.target.value)))}
+                  <input type="number" value={compoundingValue} min={1} max={600}
+                    onChange={e => setCompoundingValue(Math.max(1, Math.min(600, parseNum(e.target.value))))}
                     className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', alignItems: 'center' }}>
                     {(['day', 'month', 'year'] as DurationUnit[]).map(u => (
