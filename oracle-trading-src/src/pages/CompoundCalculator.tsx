@@ -4,6 +4,14 @@ import { ArrowLeft, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AdSense } from '../components/AdSense';
 import { SidebarAds } from '../components/SidebarAds';
+import { LearnAbout } from '../components/LearnAbout';
+
+const learnSections = [
+  { title: '📚 What is Compound Interest?', content: 'Compound interest is the process of earning interest on both the principal and accumulated interest — often called "interest on interest." The concept dates back to ancient Mesopotamia (2400 BC) and was formalized by mathematicians in the Renaissance era. Albert Einstein reportedly called it the "eighth wonder of the world," saying "He who understands it, earns it; he who doesn\'t, pays it." Unlike simple interest, which grows linearly, compound interest produces exponential growth over time — meaning your money accelerates faster the longer it remains invested.' },
+  { title: '✅ Advantages', content: ['Exponential Growth: Your returns generate their own returns, creating a snowball effect that accelerates over time', 'Passive Wealth Building: Money works for you automatically — no active effort required after the initial investment', 'Inflation Protection: Compound returns historically outpace inflation, preserving and growing real purchasing power', 'Time Leverage: The earlier you invest, the more compounding periods you benefit from — time is your greatest asset', 'Versatile Application: Works across all asset classes — stocks, bonds, crypto, real estate, and savings accounts'] },
+  { title: '⚠️ Disadvantages', content: ['Patience Required: The most dramatic growth occurs in the later periods — early results can feel underwhelming', 'Negative Compounding: Debts and losses also compound, making it equally powerful against you if you borrow at high rates', 'Inflation Risk at Low Rates: If your compound return is lower than inflation, real purchasing power still erodes despite nominal growth'] },
+  { title: '💡 How to Use', content: ['Initial Investment: Enter your starting capital — even small amounts compound significantly over long periods', 'Return Rate (%): Use realistic figures — S&P 500 historically averages ~10% annual returns before inflation', 'Duration Unit: Choose Day/Month/Year based on how frequently returns are calculated', 'Read the Breakdown Table: Track exactly how much interest compounds each period', 'Tip: Doubling your time horizon has more impact than doubling your investment amount'] },
+];
 
 type DurationUnit = 'Day' | 'Month' | 'Year';
 const parseNum = (val: string) => { const n = parseFloat(val.replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
@@ -56,6 +64,7 @@ export default function CompoundCalculator() {
         </div>
       </header>
       <div className="bg-card/50 py-4 border-b border-primary/20"><div className="container"><AdSense slot="1234567891" format="horizontal" responsive={true} /></div></div>
+      <LearnAbout topic="Compound Interest" sections={learnSections} />
       <div className="container py-12">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="hidden lg:block"><SidebarAds /></div>
@@ -127,6 +136,7 @@ export default function CompoundCalculator() {
                 )}
               </div>
             </div>
+            <div className="bg-card/50 py-4 border-y border-primary/20" style={{ marginLeft: '-1.5rem', marginRight: '-1.5rem', paddingLeft: '1.5rem', paddingRight: '1.5rem' }}><AdSense slot="1234567893" format="horizontal" responsive={true} /></div>
             <div className="card-gold-glow" style={{ overflow: 'hidden' }}>
               <div style={{ padding: 24 }}><h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700 }}>{durationUnit}-by-{durationUnit} Breakdown</h3></div>
               <div style={{ overflowX: 'auto' }}>
