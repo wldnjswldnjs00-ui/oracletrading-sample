@@ -14,9 +14,9 @@ export function SidebarAds() {
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={slotStyle}><AdSense slot="1234567890" format="rectangle" /></div>
-      <div style={slotStyle}><AdSense slot="1234567891" format="rectangle" /></div>
-      <div style={slotStyle}><AdSense slot="1234567892" format="rectangle" /></div>
+      <div style={slotStyle}><AdSense slot="9999999001" format="rectangle" /></div>
+      <div style={slotStyle}><AdSense slot="9999999002" format="rectangle" /></div>
+      <div style={slotStyle}><AdSense slot="9999999003" format="rectangle" /></div>
     </div>
   );
 }

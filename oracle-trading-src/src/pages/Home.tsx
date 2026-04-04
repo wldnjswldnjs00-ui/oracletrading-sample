@@ -93,7 +93,7 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: 'var(--gold)', fontSize: 16 }}>👥</span>
-              <span className="text-foreground" style={{ fontSize: 15, fontWeight: 700 }}>50,000+</span>
+              <span className="text-foreground notranslate" style={{ fontSize: 15, fontWeight: 700 }}>50,000+</span>
               <span className="text-muted-foreground" style={{ fontSize: 14 }}>skilled traders worldwide</span>
             </div>
             <span className="text-muted-foreground" style={{ fontSize: 14, opacity: 0.4 }}>·</span>

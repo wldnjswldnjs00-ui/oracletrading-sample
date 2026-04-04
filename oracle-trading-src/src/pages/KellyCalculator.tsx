@@ -57,22 +57,35 @@ export default function KellyCalculator() {
 
   const kellyValue = kellyValues[selectedKelly];
 
-  const chartData = useMemo(() => {
-    const data = [];
-    let capital = startingCapital;
+  const projectedFinalCapital = useMemo(() => {
     const fraction = kellyValue / 100;
     const p = winRate / 100;
     const q = 1 - p;
     const b = profitRatio / lossRatio;
-    // Geometric growth factor per trade: (1 + f*b)^p * (1 - f)^q
-    // This is the correct Kelly compounding formula (log-growth maximization)
     const perTrade = fraction > 0
       ? Math.pow(1 + fraction * b, p) * Math.pow(Math.max(1 - fraction, 0.0001), q)
       : 1;
-    const count = Math.max(1, Math.min(simulatorTrades, 500)); // cap at 500 for performance
-    for (let i = 0; i <= count; i++) {
-      data.push({ trade: `T${i}`, capital: Math.round(capital) });
-      capital = capital * perTrade;
+    return Math.round(startingCapital * Math.pow(perTrade, simulatorTrades));
+  }, [kellyValue, winRate, profitRatio, lossRatio, startingCapital, simulatorTrades]);
+
+  const chartData = useMemo(() => {
+    const fraction = kellyValue / 100;
+    const p = winRate / 100;
+    const q = 1 - p;
+    const b = profitRatio / lossRatio;
+    const perTrade = fraction > 0
+      ? Math.pow(1 + fraction * b, p) * Math.pow(Math.max(1 - fraction, 0.0001), q)
+      : 1;
+    const maxPoints = 500;
+    const step = Math.max(1, Math.ceil(simulatorTrades / maxPoints));
+    const data = [];
+    for (let i = 0; i * step <= simulatorTrades; i++) {
+      const tradeNum = Math.min(i * step, simulatorTrades);
+      const capital = Math.round(startingCapital * Math.pow(perTrade, tradeNum));
+      const label = tradeNum >= 1000000 ? `T${(tradeNum / 1000000).toFixed(1)}M`
+        : tradeNum >= 1000 ? `T${(tradeNum / 1000).toFixed(0)}k`
+        : `T${tradeNum}`;
+      data.push({ trade: label, capital });
     }
     return data;
   }, [kellyValue, winRate, profitRatio, lossRatio, startingCapital, simulatorTrades]);
@@ -131,8 +144,8 @@ export default function KellyCalculator() {
                   {/* Kelly inputs */}
                   {[
                     { label: 'Win Rate (%)', value: winRate, set: (v: number) => setWinRate(Math.max(0, Math.min(100, v))), hint: 'Historical win rate (0–100%)', step: 1 },
-                    { label: 'Avg Profit per Win (%)', value: profitRatio, set: (v: number) => setProfitRatio(Math.max(0.1, v)), hint: 'Average % gained when winning', step: 0.1 },
-                    { label: 'Avg Loss per Loss (%)', value: lossRatio, set: (v: number) => setLossRatio(Math.max(0.1, v)), hint: 'Average % lost when losing', step: 0.1 },
+                    { label: 'Avg Profit per Win (%)', value: profitRatio, set: (v: number) => setProfitRatio(Math.max(0.1, Math.min(10000, v))), hint: 'Average % gained when winning', step: 0.1 },
+                    { label: 'Avg Loss per Loss (%)', value: lossRatio, set: (v: number) => setLossRatio(Math.max(0.1, Math.min(10000, v))), hint: 'Average % lost when losing', step: 0.1 },
                   ].map(({ label, value, set, hint, step }) => (
                     <div key={label}>
                       <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{label}</label>
@@ -178,8 +191,8 @@ export default function KellyCalculator() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                                <span style={{ fontSize: 16, fontWeight: 800 }}>{label}</span>
-                                <span style={{
+                                <span className="notranslate" style={{ fontSize: 16, fontWeight: 800 }}>{label}</span>
+                                <span className="notranslate" style={{
                                   fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
                                   background: isSelected ? 'rgba(255,255,255,0.2)' : 'color-mix(in oklab, var(--primary) 15%, transparent)',
                                   color: isSelected ? '#fff' : 'var(--gold)',
@@ -209,7 +222,7 @@ export default function KellyCalculator() {
                 </h3>
                 <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                   <span className="text-muted-foreground">Starting: <span className="text-gold font-mono notranslate">{startingCapital.toLocaleString()}</span></span>
-                  <span className="text-muted-foreground">Projected: <span className="text-gold font-mono notranslate">{(chartData[chartData.length - 1]?.capital ?? 0).toLocaleString()}</span></span>
+                  <span className="text-muted-foreground">Projected: <span className="text-gold font-mono notranslate">{projectedFinalCapital.toLocaleString()}</span></span>
                 </div>
               </div>
               <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
