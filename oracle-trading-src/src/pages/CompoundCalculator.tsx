@@ -24,7 +24,7 @@ export default function CompoundCalculator() {
   const [durationUnit, setDurationUnit] = useState<DurationUnit>('Month');
 
   const result = useMemo(() => {
-    if (!initialInvestment || !returnRate || !duration) return null;
+    if (!initialInvestment || !duration) return null;
     const r = returnRate / 100;
     const schedule = [];
     for (let i = 0; i <= duration; i++) {
