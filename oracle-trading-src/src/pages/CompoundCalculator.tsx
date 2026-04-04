@@ -1,174 +1,156 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp } from 'lucide-react';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { useNumberInput } from '../hooks/useNumberInput';
-import { calculateCompound } from '../lib/calculations';
-import { PageHeader, InputField, StatCard, AlertCard, inputStyle } from '../components/Layout';
+import { useLocation } from 'wouter';
+import { ArrowLeft, TrendingUp } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AdSense } from '../components/AdSense';
+import { SidebarAds } from '../components/SidebarAds';
 
-type DurationUnit = 'days' | 'months' | 'years';
-
-const unitLabels: Record<DurationUnit, string> = { days: 'Days', months: 'Months', years: 'Years' };
+type DurationUnit = 'Day' | 'Month' | 'Year';
+const parseNum = (val: string) => { const n = parseFloat(val.replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
 
 export default function CompoundCalculator() {
-  const initial = useNumberInput(10000);
-  const monthlyRate = useNumberInput(5);
-  const duration = useNumberInput(12);
-  const [unit, setUnit] = useState<DurationUnit>('months');
+  const [, navigate] = useLocation();
+  const [initialInvestment, setInitialInvestment] = useState(10000);
+  const [returnRate, setReturnRate] = useState(10);
+  const [duration, setDuration] = useState(12);
+  const [durationUnit, setDurationUnit] = useState<DurationUnit>('Month');
 
-  const result = useMemo(
-    () => calculateCompound(initial.value, monthlyRate.value, duration.value, unit),
-    [initial.value, monthlyRate.value, duration.value, unit]
-  );
+  const result = useMemo(() => {
+    if (!initialInvestment || !returnRate || !duration) return null;
+    const r = returnRate / 100;
+    const schedule = [];
+    for (let i = 0; i <= duration; i++) {
+      const balance = initialInvestment * Math.pow(1 + r, i);
+      const prevBalance = i > 0 ? initialInvestment * Math.pow(1 + r, i - 1) : initialInvestment;
+      const interest = i === 0 ? 0 : balance - prevBalance;
+      const cumulativeRoi = ((balance - initialInvestment) / initialInvestment) * 100;
+      schedule.push({ period: i, balance, interest, cumulativeRoi });
+    }
+    const finalBalance = initialInvestment * Math.pow(1 + r, duration);
+    const totalInterest = finalBalance - initialInvestment;
+    const roi = (totalInterest / initialInvestment) * 100;
+    return { finalBalance, totalInterest, roi, schedule };
+  }, [initialInvestment, returnRate, duration]);
 
-  const isNegative = monthlyRate.value < 0;
-
-  const unitDisplayLabel = unit === 'days' ? `${Math.ceil(duration.value)} days` : unit === 'years' ? `${duration.value} years` : `${duration.value} months`;
-
-  // Format numbers without currency symbols — comma separated only
-  const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 0 });
-  const fmtPct = (_n: number) => {
-    const pct = result.totalProfit / Math.max(1, initial.value) * 100;
-    return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
-  };
-
-  const chartData = result.monthlyData.slice(0, 60); // cap for display
+  const chartData = useMemo(() => {
+    if (!result) return [];
+    return result.schedule.map(s => ({ period: `${durationUnit} ${s.period}`, balance: Math.round(s.balance) }));
+  }, [result, durationUnit]);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'hsl(222 47% 6%)', color: 'hsl(50 100% 92%)' }}>
-      <PageHeader title="Compound Interest Calculator" subtitle="Project your wealth growth with compound returns" icon={<TrendingUp size={20} />} />
-
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32 }}>
-
-          {/* Input Panel */}
-          <div className="card-gold-glow" style={{ padding: 24, alignSelf: 'start', position: 'sticky', top: 88 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24, color: 'hsl(50 100% 92%)' }}>Investment Parameters</h2>
-
-            <InputField label="Starting Amount" hint="Your initial investment amount">
-              <input ref={initial.ref} type="number" value={initial.value} onChange={initial.onChange} onInput={initial.onInput} min="0" translate="no" style={inputStyle} />
-            </InputField>
-
-            <InputField label="Monthly Return (%)" hint="Expected monthly return percentage">
-              <input ref={monthlyRate.ref} type="number" value={monthlyRate.value} onChange={monthlyRate.onChange} onInput={monthlyRate.onInput} step="0.1" translate="no" style={inputStyle} />
-            </InputField>
-
-            <InputField label="Investment Duration">
-              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                <input ref={duration.ref} type="number" value={duration.value} onChange={duration.onChange} onInput={duration.onInput} min="1" translate="no" style={{ ...inputStyle, width: 80 }} />
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {(['days', 'months', 'years'] as DurationUnit[]).map(u => (
-                    <button
-                      key={u}
-                      onClick={() => setUnit(u)}
-                      style={{
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        border: 'none',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        backgroundColor: unit === u ? 'hsl(45 100% 55%)' : 'hsl(222 47% 9%)',
-                        color: unit === u ? 'hsl(222 47% 6%)' : 'hsl(50 20% 60%)',
-                        transition: 'all 0.15s',
-                      }}
-                    >{unitLabels[u]}</button>
-                  ))}
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-primary/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container py-4 flex items-center gap-4">
+          <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 8 }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in oklab, var(--primary) 10%, transparent)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+            <ArrowLeft className="w-5 h-5 text-gold" />
+          </button>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <TrendingUp className="w-5 h-5 text-gold" />
+              <h1 className="text-foreground" style={{ fontSize: 22, fontWeight: 700 }}>Compound Interest Calculator</h1>
+            </div>
+            <p className="text-muted-foreground" style={{ fontSize: 13 }}>Visualize the power of exponential growth</p>
+          </div>
+        </div>
+      </header>
+      <div className="bg-card/50 py-4 border-b border-primary/20"><div className="container"><AdSense slot="1234567891" format="horizontal" responsive={true} /></div></div>
+      <div className="container py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div className="hidden lg:block"><SidebarAds /></div>
+          <div className="lg:col-span-4 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+              <div className="card-gold-glow p-6" style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2 className="text-foreground" style={{ fontSize: 20, fontWeight: 700, marginBottom: 24 }}>Investment Parameters</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+                  <div>
+                    <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Initial Investment</label>
+                    <input type="number" value={initialInvestment} onChange={e => setInitialInvestment(Math.max(0, parseNum(e.target.value)))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Target Return Rate (%)</label>
+                    <input type="number" value={returnRate} onChange={e => setReturnRate(Math.max(0, parseNum(e.target.value)))} step="0.1" className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Investment Duration</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
+                      <input type="number" value={duration} onChange={e => setDuration(Math.max(1, parseNum(e.target.value)))} className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, padding: 4, background: 'rgba(0,0,0,0.4)', borderRadius: 8, border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', height: 38 }}>
+                        {(['Day', 'Month', 'Year'] as DurationUnit[]).map(u => (
+                          <button key={u} onClick={() => setDurationUnit(u)} style={{ borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', border: 'none', background: durationUnit === u ? '#fff' : 'transparent', color: durationUnit === u ? '#000' : '#fff' }}>{u}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <p style={{ fontSize: 12, color: 'hsl(50 20% 60%)' }}>
-                {unit === 'days' ? `${Math.ceil(duration.value / 30.44)} months approximately` : unit === 'years' ? `${duration.value * 12} months` : `${duration.value} months`}
-              </p>
-            </InputField>
-          </div>
-
-          {/* Results Panel */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {isNegative && (
-              <AlertCard type="error" title="Negative Return Rate" message="A negative monthly return means your balance will decrease over time. The projection below shows the expected loss." />
-            )}
-
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-              <StatCard
-                label="Final Balance"
-                value={fmt(result.finalAmount)}
-                subtext={`After ${unitDisplayLabel}`}
-                valueStyle={{ color: 'hsl(45 100% 55%)' }}
-              />
-              <StatCard
-                label="Total Gain"
-                value={fmt(result.totalProfit)}
-                subtext="Pure profit earned"
-                valueStyle={{ color: result.totalProfit >= 0 ? 'hsl(120 60% 55%)' : 'hsl(0 84% 60%)' }}
-              />
-              <StatCard
-                label="Initial Investment"
-                value={fmt(initial.value)}
-                subtext="Your starting capital"
-                valueStyle={{ color: 'hsl(45 100% 70%)' }}
-              />
-              <StatCard
-                label="Total Return"
-                value={fmtPct(result.totalProfit)}
-                subtext="Return on initial capital"
-                valueStyle={{ color: result.totalProfit >= 0 ? 'hsl(120 60% 55%)' : 'hsl(0 84% 60%)' }}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {[
+                  { label: 'Final Balance', value: (result?.finalBalance ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 }), color: 'var(--gold)', cls: 'text-gold' },
+                  { label: 'Total Gain', value: (result?.totalInterest ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 }), color: 'var(--accent)', cls: 'text-accent' },
+                  { label: 'Return on Investment', value: `${(result?.roi ?? 0).toFixed(2)}%`, color: 'var(--gold)', cls: 'text-gold' },
+                ].map(({ label, value, color, cls }) => (
+                  <div key={label} className="card-gold-glow p-6" style={{ borderLeft: `4px solid ${color}`, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }} className="text-muted-foreground">
+                      <TrendingUp style={{ width: 16, height: 16 }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+                    </div>
+                    <p className={`${cls} font-mono notranslate`} style={{ fontSize: 36, fontWeight: 900 }}>{value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-
-            {/* Chart */}
-            <div className="card-gold-glow" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'hsl(50 100% 92%)' }}>Growth Projection</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(45 100% 55%)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(45 100% 55%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 47% 18%)" />
-                  <XAxis dataKey="month" stroke="hsl(50 20% 60%)" tick={{ fill: 'hsl(50 20% 60%)', fontSize: 11 }} />
-                  <YAxis stroke="hsl(50 20% 60%)" tick={{ fill: 'hsl(50 20% 60%)', fontSize: 11 }} tickFormatter={v => v.toLocaleString('en-US')} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'hsl(222 47% 9%)', border: '1px solid hsl(45 100% 55% / 0.3)', borderRadius: 8 }}
-                    labelStyle={{ color: 'hsl(50 100% 92%)' }}
-                    formatter={(v) => [(v as number).toLocaleString('en-US', { maximumFractionDigits: 0 }), 'Balance']}
-                  />
-                  <Area type="monotone" dataKey="balance" stroke="hsl(45 100% 55%)" fill="url(#colorBalance)" strokeWidth={2} dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Breakdown Table */}
-            <div className="card-gold-glow" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'hsl(50 100% 92%)' }}>
-                {unit === 'days' ? 'Day-by-Day Breakdown' : 'Month-by-Month Breakdown'}
+            <div className="card-gold-glow p-6">
+              <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <TrendingUp style={{ width: 20, height: 20, color: 'var(--gold)' }} /> Growth Projection
               </h3>
+              <div style={{ height: 400, width: '100%' }}>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                      <XAxis dataKey="period" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `${((v as number) / 1000).toFixed(0)}k`} />
+                      <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #D4AF37', borderRadius: 8 }} itemStyle={{ color: '#D4AF37' }} formatter={(v) => [(v as number).toLocaleString(), 'Balance']} />
+                      <Area type="monotone" dataKey="balance" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }} className="text-muted-foreground">Enter parameters to see projection</div>
+                )}
+              </div>
+            </div>
+            <div className="card-gold-glow" style={{ overflow: 'hidden' }}>
+              <div style={{ padding: 24 }}><h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700 }}>{durationUnit}-by-{durationUnit} Breakdown</h3></div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid hsl(45 100% 55% / 0.2)' }}>
-                      {[unit === 'days' ? 'Day' : 'Month', 'Balance', 'Profit'].map(h => (
-                        <th key={h} style={{ padding: '8px', textAlign: 'left', color: 'hsl(50 20% 60%)', fontWeight: 600 }}>{h}</th>
+                    <tr style={{ background: 'color-mix(in oklab, var(--primary) 5%, transparent)' }}>
+                      {[durationUnit, 'Total Asset', 'Profit', 'ROI %'].map(h => (
+                        <th key={h} className="text-muted-foreground" style={{ padding: '16px 24px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {result.monthlyData.slice(0, 120).map(row => (
-                      <tr key={row.month} style={{ borderBottom: '1px solid hsl(45 100% 55% / 0.08)' }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'hsl(45 100% 55% / 0.05)'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        <td style={{ padding: '8px', color: 'hsl(50 100% 92%)', fontWeight: 600 }} translate="no">
-                          {unit === 'days' ? 'Day' : 'Month'} {row.month}
-                        </td>
-                        <td style={{ padding: '8px', fontFamily: 'monospace', color: 'hsl(45 100% 55%)' }} translate="no">{fmt(row.balance)}</td>
-                        <td style={{ padding: '8px', fontFamily: 'monospace', color: row.profit >= 0 ? 'hsl(120 60% 55%)' : 'hsl(0 84% 60%)' }} translate="no">
-                          {row.profit >= 0 ? '+' : ''}{fmt(row.profit)}
-                        </td>
+                    {result ? result.schedule.slice(1).map((s, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid color-mix(in oklab, var(--primary) 5%, transparent)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in oklab, var(--primary) 5%, transparent)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <td className="text-muted-foreground font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13 }}>{durationUnit} {s.period}</td>
+                        <td className="text-gold font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13, fontWeight: 700 }}>{s.balance.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                        <td className="text-accent font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13, fontWeight: 600 }}>+{s.interest.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                        <td className="text-gold font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13 }}>{s.cumulativeRoi.toFixed(2)}%</td>
                       </tr>
-                    ))}
+                    )) : (
+                      <tr><td colSpan={4} style={{ padding: '48px 24px', textAlign: 'center' }} className="text-muted-foreground">Enter investment details to generate breakdown</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -176,6 +158,7 @@ export default function CompoundCalculator() {
           </div>
         </div>
       </div>
+      <div className="bg-card/50 py-4 border-t border-primary/20 mt-12"><div className="container"><AdSense slot="1234567892" format="horizontal" responsive={true} /></div></div>
     </div>
   );
 }
