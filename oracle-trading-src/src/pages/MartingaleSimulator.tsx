@@ -34,8 +34,21 @@ export default function MartingaleSimulator() {
   const handleLevelsChange = (n: number) => {
     const clamped = Math.max(1, Math.min(10, Math.round(n)));
     setNumberOfLevels(clamped);
-    const sizes = Array.from({ length: clamped }, (_, i) => Math.pow(2, i));
-    setPositionSizesText(sizes.join(', '));
+    const separator = positionSizesText.includes(';') ? ';' : ',';
+    const currentSizes = positionSizesText
+      .split(separator)
+      .map(s => parseFloat(s.trim().replace(',', '.')))
+      .filter(v => !isNaN(v) && v > 0);
+    let newSizes = [...currentSizes];
+    if (clamped < newSizes.length) {
+      newSizes = newSizes.slice(0, clamped);
+    } else {
+      while (newSizes.length < clamped) {
+        const last = newSizes[newSizes.length - 1] ?? 1;
+        newSizes.push(last * 2);
+      }
+    }
+    setPositionSizesText(newSizes.join(', '));
   };
 
   // Parse positionSizesText for computation

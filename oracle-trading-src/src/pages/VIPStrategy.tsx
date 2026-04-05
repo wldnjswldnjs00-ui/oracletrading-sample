@@ -48,8 +48,10 @@ export default function VIPStrategy() {
   const handleUnitChange = (newUnit: DurationUnit) => {
     if (newUnit === compoundingUnit) return;
     const toDays = compoundingUnit === 'day' ? compoundingValue : compoundingUnit === 'month' ? compoundingValue * 30 : compoundingValue * 365;
-    const converted = newUnit === 'day' ? toDays : newUnit === 'month' ? Math.round(toDays / 30) : Math.round(toDays / 365);
-    setCompoundingValue(Math.max(1, Math.min(600, converted)));
+    const rawConverted = newUnit === 'day' ? toDays : newUnit === 'month' ? toDays / 30 : toDays / 365;
+    const unitDefaults: Record<DurationUnit, number> = { day: 30, month: 12, year: 1 };
+    const converted = rawConverted >= 1 ? Math.min(600, Math.round(rawConverted)) : unitDefaults[newUnit];
+    setCompoundingValue(converted);
     setCompoundingUnit(newUnit);
   };
 
