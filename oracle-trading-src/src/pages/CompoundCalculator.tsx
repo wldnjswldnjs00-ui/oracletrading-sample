@@ -128,7 +128,7 @@ export default function CompoundCalculator() {
             </div>
             <div className="card-gold-glow p-6">
               <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TrendingUp style={{ width: 20, height: 20, color: 'var(--gold)' }} /> Growth Projection
+                <TrendingUp style={{ width: 20, height: 20, color: 'var(--gold)' }} /><span> Growth Projection</span>
               </h3>
               <div style={{ height: 400, width: '100%' }}>
                 {chartData.length > 0 ? (
