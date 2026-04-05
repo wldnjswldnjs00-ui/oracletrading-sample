@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OKX BTC 백테스트 시뮬레이터</title>
+<title>BTC 백테스트 시뮬레이터</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,7 +14,7 @@
   .controls {
     display: flex; flex-wrap: wrap; gap: 12px;
     background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
-    padding: 16px; margin-bottom: 20px;
+    padding: 16px; margin-bottom: 16px;
   }
   .ctrl-group { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
   .ctrl-group label { font-size: 11px; color: #888; }
@@ -22,16 +22,23 @@
     background: #111; border: 1px solid #444; border-radius: 6px;
     color: #fff; padding: 6px 10px; font-size: 13px; width: 100%;
   }
-  .ctrl-group input:focus, .ctrl-group select:focus {
-    outline: none; border-color: #D4AF37;
-  }
+  .ctrl-group input:focus, .ctrl-group select:focus { outline: none; border-color: #D4AF37; }
   button {
-    padding: 8px 24px; border-radius: 8px; border: none; cursor: pointer;
-    font-size: 14px; font-weight: 600; align-self: flex-end;
+    padding: 8px 28px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: 700; align-self: flex-end;
   }
   #runBtn { background: #D4AF37; color: #000; }
   #runBtn:hover { background: #f0c93a; }
   #runBtn:disabled { background: #555; color: #999; cursor: not-allowed; }
+
+  .progress-wrap {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 16px; display: none;
+  }
+  .progress-wrap.show { display: block; }
+  .progress-label { font-size: 12px; color: #aaa; margin-bottom: 8px; }
+  .progress-bar-bg { background: #333; border-radius: 4px; height: 8px; }
+  .progress-bar-fill { background: #D4AF37; border-radius: 4px; height: 8px; transition: width 0.3s; width: 0%; }
 
   .stats-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -51,7 +58,7 @@
     padding: 16px; margin-bottom: 20px;
   }
   .chart-wrap h3 { color: #D4AF37; font-size: 14px; margin-bottom: 12px; }
-  canvas { max-height: 280px; }
+  canvas { max-height: 260px; }
 
   .table-wrap {
     background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
@@ -62,90 +69,85 @@
   th { background: #111; color: #888; padding: 8px 12px; text-align: left;
        border-bottom: 1px solid #333; white-space: nowrap; }
   td { padding: 8px 12px; border-bottom: 1px solid #222; white-space: nowrap; }
-  tr:hover td { background: #222; }
+  tr:hover td { background: #1e1e1e; }
   .win { color: #4caf7d; font-weight: 600; }
   .loss { color: #e05c5c; font-weight: 600; }
   .pnl-pos { color: #4caf7d; }
   .pnl-neg { color: #e05c5c; }
 
-  #status {
-    background: #1a1a1a; border: 1px solid #444; border-radius: 8px;
-    padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #aaa;
-    display: none;
+  #statusMsg {
+    font-size: 12px; color: #aaa; background: #1a1a1a;
+    border: 1px solid #333; border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 16px; display: none;
   }
-  #status.show { display: block; }
+  #statusMsg.show { display: block; }
 </style>
 </head>
 <body>
 
-<h1>📊 OKX BTC 백테스트 시뮬레이터</h1>
-<p class="subtitle">거래량 급등 + 장대양봉 + 되돌림 타점 전략 — 5분봉 기준</p>
+<h1>📊 BTC 백테스트 시뮬레이터</h1>
+<p class="subtitle">거래량 급등 + 장대양봉 + 되돌림 타점 전략 — Binance 1시간봉 기준</p>
 
-<!-- 파라미터 -->
 <div class="controls">
   <div class="ctrl-group">
     <label>종목</label>
-    <select id="instId">
-      <option value="BTC-USDT-SWAP">BTC/USDT 무기한</option>
-      <option value="ETH-USDT-SWAP">ETH/USDT 무기한</option>
-      <option value="SOL-USDT-SWAP">SOL/USDT 무기한</option>
+    <select id="symbol">
+      <option value="BTCUSDT">BTC/USDT</option>
+      <option value="ETHUSDT">ETH/USDT</option>
+      <option value="SOLUSDT">SOL/USDT</option>
+      <option value="BNBUSDT">BNB/USDT</option>
     </select>
   </div>
   <div class="ctrl-group">
-    <label>캔들 수 (최대 1440)</label>
-    <input type="number" id="candleCount" value="500" min="200" max="1440">
+    <label>시작 날짜</label>
+    <input type="date" id="startDate" value="2020-01-01">
+  </div>
+  <div class="ctrl-group">
+    <label>종료 날짜</label>
+    <input type="date" id="endDate">
   </div>
   <div class="ctrl-group">
     <label>고점 탐지 범위 (캔들)</label>
-    <input type="number" id="lookback" value="100" min="20" max="200">
+    <input type="number" id="lookback" value="72" min="20" max="300">
   </div>
   <div class="ctrl-group">
     <label>최소 하락률 (%)</label>
-    <input type="number" id="dropPct" value="4" min="1" max="20" step="0.5">
+    <input type="number" id="dropPct" value="8" min="1" max="30" step="0.5">
   </div>
   <div class="ctrl-group">
     <label>거래량 급등 배수</label>
-    <input type="number" id="volMult" value="1.8" min="1" max="5" step="0.1">
+    <input type="number" id="volMult" value="2.0" min="1" max="10" step="0.1">
   </div>
   <div class="ctrl-group">
     <label>장대양봉 몸통 비율</label>
-    <input type="number" id="bodyRatio" value="0.45" min="0.1" max="0.9" step="0.05">
+    <input type="number" id="bodyRatio" value="0.5" min="0.1" max="0.9" step="0.05">
   </div>
   <div class="ctrl-group">
     <label>되돌림 대기 (캔들)</label>
-    <input type="number" id="pullbackBars" value="20" min="5" max="50">
+    <input type="number" id="pullbackBars" value="24" min="3" max="100">
   </div>
   <button id="runBtn" onclick="runBacktest()">▶ 실행</button>
 </div>
 
-<div id="status"></div>
+<div class="progress-wrap" id="progressWrap">
+  <div class="progress-label" id="progressLabel">데이터 수집 중...</div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+</div>
 
-<!-- 통계 -->
+<div id="statusMsg"></div>
 <div class="stats-grid" id="statsGrid" style="display:none"></div>
-
-<!-- 누적 손익 차트 -->
 <div class="chart-wrap" id="chartWrap" style="display:none">
   <h3>📈 누적 손익 곡선 (%)</h3>
   <canvas id="pnlChart"></canvas>
 </div>
-
-<!-- 거래 내역 -->
 <div class="table-wrap" id="tableWrap" style="display:none">
   <h3>📋 거래 내역</h3>
-  <table id="tradeTable">
+  <table>
     <thead>
       <tr>
-        <th>#</th>
-        <th>신호 시간</th>
-        <th>진입 시간</th>
-        <th>청산 시간</th>
-        <th>진입가</th>
-        <th>익절가</th>
-        <th>손절가</th>
-        <th>청산가</th>
-        <th>결과</th>
-        <th>손익(%)</th>
-        <th>RR비율</th>
+        <th>#</th><th>신호 시간</th><th>진입 시간</th><th>청산 시간</th>
+        <th>진입가</th><th>익절가 (전고점)</th><th>손절가</th>
+        <th>청산가</th><th>결과</th><th>손익(%)</th><th>RR비율</th>
       </tr>
     </thead>
     <tbody id="tradeBody"></tbody>
@@ -155,51 +157,61 @@
 <script>
 let pnlChartInst = null;
 
-function setStatus(msg) {
-  const el = document.getElementById('status');
-  el.textContent = msg;
-  el.classList.add('show');
-}
+// 오늘 날짜 기본값
+document.getElementById('endDate').value = new Date().toISOString().split('T')[0];
 
+function setStatus(msg) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg; el.classList.add('show');
+}
+function setProgress(pct, label) {
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+function hideProgress() {
+  document.getElementById('progressWrap').classList.remove('show');
+}
 function fmt(ts) {
   const d = new Date(ts);
-  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:00`;
 }
 
-async function fetchCandles(instId, total) {
-  const url = 'https://www.okx.com/api/v5/market/history-candles';
+// Binance 1시간봉 데이터 수집 (날짜 범위)
+async function fetchCandles(symbol, startTs, endTs) {
+  const url = 'https://api.binance.com/api/v3/klines';
+  const limit = 1000;
   let all = [];
-  let after = '';
-  const limit = 100;
+  let current = startTs;
+  const total = endTs - startTs;
 
-  while (all.length < total) {
-    const need = Math.min(limit, total - all.length);
-    let endpoint = `${url}?instId=${instId}&bar=5m&limit=${need}`;
-    if (after) endpoint += `&after=${after}`;
-
-    const res = await fetch(endpoint);
-    const json = await res.json();
-    const data = json.data || [];
+  while (current < endTs) {
+    const params = new URLSearchParams({
+      symbol, interval: '1h', startTime: current, endTime: endTs, limit
+    });
+    const res = await fetch(`${url}?${params}`);
+    if (!res.ok) throw new Error(`API 오류: ${res.status}`);
+    const data = await res.json();
     if (!data.length) break;
 
     all = all.concat(data);
-    after = data[data.length - 1][0];
-    if (data.length < need) break;
+    current = data[data.length - 1][0] + 3600000; // 다음 1시간
+
+    const pct = Math.min(99, Math.round((current - startTs) / total * 100));
+    setProgress(pct, `데이터 수집 중... ${all.length.toLocaleString()}개 (${pct}%)`);
+
+    if (data.length < limit) break;
+    await new Promise(r => setTimeout(r, 80)); // rate limit 방지
   }
 
-  // [ts, open, high, low, close, vol, ...]
-  return all
-    .filter(c => c[8] === '1')
-    .slice(0, total)
-    .map(c => ({
-      ts:    parseInt(c[0]),
-      open:  parseFloat(c[1]),
-      high:  parseFloat(c[2]),
-      low:   parseFloat(c[3]),
-      close: parseFloat(c[4]),
-      vol:   parseFloat(c[5]),
-    }))
-    .sort((a, b) => a.ts - b.ts);
+  return all.map(c => ({
+    ts:    c[0],
+    open:  parseFloat(c[1]),
+    high:  parseFloat(c[2]),
+    low:   parseFloat(c[3]),
+    close: parseFloat(c[4]),
+    vol:   parseFloat(c[5]),
+  }));
 }
 
 function calcVolMA(candles, period) {
@@ -222,7 +234,7 @@ function backtest(candles, params) {
     const vm = volMA[i];
     if (!vm) { i++; continue; }
 
-    // 1. 고점 대비 하락
+    // 1. 고점 대비 충분히 하락
     const swingHigh = Math.max(...candles.slice(i - lookback, i).map(x => x.high));
     if (c.close >= swingHigh * (1 - dropPct)) { i++; continue; }
     debug.drop++;
@@ -231,22 +243,22 @@ function backtest(candles, params) {
     if (c.vol < vm * volMult) { i++; continue; }
     debug.vol++;
 
-    // 3. 장대양봉
+    // 3. 장대양봉 (양봉 + 몸통 비율)
     const range = c.high - c.low;
     if (range === 0) { i++; continue; }
     const body = Math.abs(c.close - c.open);
     if (body / range < bodyRatio || c.close <= c.open) { i++; continue; }
     debug.body++;
 
-    // 타점 설정
+    // 타점: 장대양봉 직전 캔들 고점 = 지지 레벨
     const entryLevel = candles[i - 1].high;
     const sl1 = c.low;
     const sl2 = Math.min(...candles.slice(Math.max(0, i - lookback), i).map(x => x.low));
     const tp  = swingHigh;
 
-    if (tp <= entryLevel) { i++; continue; }
+    if (tp <= entryLevel || entryLevel <= sl1) { i++; continue; }
 
-    // 4. 되돌림 대기
+    // 4. 되돌림 대기 (entry_level 터치)
     let entryPrice = null, entryBar = null;
     for (let j = i + 1; j < Math.min(i + 1 + pullbackBars, candles.length); j++) {
       if (candles[j].low <= entryLevel) {
@@ -263,21 +275,20 @@ function backtest(candles, params) {
     for (let k = entryBar + 1; k < candles.length; k++) {
       const f = candles[k];
       if (f.low <= sl1) {
-        result = 'STOP LOSS 1차'; exitPrice = sl1; exitBar = k; break;
+        result = 'STOP LOSS'; exitPrice = sl1; exitBar = k; break;
       }
       if (f.high >= tp) {
-        result = '익절 (전고점)'; exitPrice = tp; exitBar = k; break;
+        result = '익절'; exitPrice = tp; exitBar = k; break;
       }
     }
     if (!result) { i = entryBar + 1; continue; }
 
-    const rr = (entryPrice - sl1) > 0 ? (tp - entryPrice) / (entryPrice - sl1) : 0;
+    const rr  = (entryPrice - sl1) > 0 ? (tp - entryPrice) / (entryPrice - sl1) : 0;
     const pnl = (exitPrice - entryPrice) / entryPrice * 100;
 
     trades.push({
-      signalTs:   candles[i].ts,
-      entryTs:    candles[entryBar].ts,
-      exitTs:     candles[exitBar].ts,
+      signalTs: candles[i].ts, entryTs: candles[entryBar].ts,
+      exitTs: candles[exitBar].ts,
       entryPrice, tp, sl1, sl2, exitPrice,
       result, pnl: +pnl.toFixed(2), rr: +rr.toFixed(2)
     });
@@ -288,67 +299,63 @@ function backtest(candles, params) {
 }
 
 function renderStats(trades) {
-  const wins   = trades.filter(t => t.result === '익절 (전고점)');
-  const losses = trades.filter(t => t.result !== '익절 (전고점)');
+  const wins    = trades.filter(t => t.result === '익절');
+  const losses  = trades.filter(t => t.result !== '익절');
   const winRate = trades.length ? (wins.length / trades.length * 100).toFixed(1) : 0;
   const avgPnl  = trades.length ? (trades.reduce((s, t) => s + t.pnl, 0) / trades.length).toFixed(2) : 0;
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0).toFixed(2);
   const avgRR   = trades.length ? (trades.reduce((s, t) => s + t.rr, 0) / trades.length).toFixed(1) : 0;
+  const maxWin  = trades.length ? Math.max(...trades.map(t => t.pnl)).toFixed(2) : 0;
+  const maxLoss = trades.length ? Math.min(...trades.map(t => t.pnl)).toFixed(2) : 0;
 
   const grid = document.getElementById('statsGrid');
   grid.style.display = 'grid';
-  const pnlClass = totalPnl >= 0 ? 'green' : 'red';
-  const avgClass  = avgPnl >= 0 ? 'green' : 'red';
   grid.innerHTML = `
     <div class="stat-card"><div class="val">${trades.length}</div><div class="lbl">총 거래</div></div>
     <div class="stat-card green"><div class="val">${wins.length}</div><div class="lbl">익절</div></div>
     <div class="stat-card red"><div class="val">${losses.length}</div><div class="lbl">손절</div></div>
     <div class="stat-card"><div class="val">${winRate}%</div><div class="lbl">승률</div></div>
-    <div class="stat-card ${avgClass}"><div class="val">${avgPnl > 0 ? '+' : ''}${avgPnl}%</div><div class="lbl">평균 손익</div></div>
-    <div class="stat-card ${pnlClass}"><div class="val">${totalPnl > 0 ? '+' : ''}${totalPnl}%</div><div class="lbl">누적 손익</div></div>
+    <div class="stat-card ${avgPnl >= 0 ? 'green':'red'}"><div class="val">${avgPnl > 0?'+':''}${avgPnl}%</div><div class="lbl">평균 손익</div></div>
+    <div class="stat-card ${totalPnl >= 0 ? 'green':'red'}"><div class="val">${totalPnl > 0?'+':''}${totalPnl}%</div><div class="lbl">누적 손익</div></div>
     <div class="stat-card"><div class="val">${avgRR}</div><div class="lbl">평균 RR비율</div></div>
+    <div class="stat-card green"><div class="val">+${maxWin}%</div><div class="lbl">최대 익절</div></div>
+    <div class="stat-card red"><div class="val">${maxLoss}%</div><div class="lbl">최대 손절</div></div>
   `;
 }
 
 function renderChart(trades) {
-  const wrap = document.getElementById('chartWrap');
-  wrap.style.display = 'block';
+  document.getElementById('chartWrap').style.display = 'block';
   if (pnlChartInst) pnlChartInst.destroy();
-
-  let cumPnl = 0;
+  let cum = 0;
   const labels = ['시작'];
   const data   = [0];
-  trades.forEach((t, idx) => {
-    cumPnl += t.pnl;
-    labels.push(`#${idx + 1}`);
-    data.push(+cumPnl.toFixed(2));
+  const colors = ['#D4AF37'];
+  trades.forEach((t, i) => {
+    cum += t.pnl;
+    labels.push(`#${i+1} ${new Date(t.exitTs).toLocaleDateString('ko-KR')}`);
+    data.push(+cum.toFixed(2));
+    colors.push(t.pnl >= 0 ? '#4caf7d' : '#e05c5c');
   });
-
   const ctx = document.getElementById('pnlChart').getContext('2d');
   pnlChartInst = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label: '누적 손익 (%)',
-        data,
-        borderColor: '#D4AF37',
-        backgroundColor: 'rgba(212,175,55,0.08)',
-        borderWidth: 2,
-        pointRadius: 4,
-        pointBackgroundColor: data.map((v, i) => {
-          if (i === 0) return '#D4AF37';
-          return data[i] >= data[i-1] ? '#4caf7d' : '#e05c5c';
-        }),
-        tension: 0.3,
-        fill: true,
+        data, borderColor: '#D4AF37',
+        backgroundColor: 'rgba(212,175,55,0.07)',
+        borderWidth: 2, pointRadius: 4,
+        pointBackgroundColor: colors,
+        tension: 0.3, fill: true,
       }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw > 0 ? '+' : ''}${ctx.raw}%` } }
+      },
       scales: {
-        x: { ticks: { color: '#666', maxTicksLimit: 10 }, grid: { color: '#222' } },
+        x: { ticks: { color: '#555', maxTicksLimit: 12, maxRotation: 0 }, grid: { color: '#1e1e1e' } },
         y: { ticks: { color: '#888', callback: v => v + '%' }, grid: { color: '#222' } }
       }
     }
@@ -356,27 +363,25 @@ function renderChart(trades) {
 }
 
 function renderTable(trades) {
-  const wrap = document.getElementById('tableWrap');
-  wrap.style.display = 'block';
+  document.getElementById('tableWrap').style.display = 'block';
   const tbody = document.getElementById('tradeBody');
   if (!trades.length) {
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#666;padding:24px">조건에 맞는 신호 없음</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#666;padding:24px">신호 없음</td></tr>';
     return;
   }
-  tbody.innerHTML = trades.map((t, idx) => {
-    const isWin = t.result === '익절 (전고점)';
-    const pnlCls = t.pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+  tbody.innerHTML = trades.map((t, i) => {
+    const isWin = t.result === '익절';
     return `<tr>
-      <td>${idx + 1}</td>
+      <td>${i+1}</td>
       <td>${fmt(t.signalTs)}</td>
       <td>${fmt(t.entryTs)}</td>
       <td>${fmt(t.exitTs)}</td>
-      <td>${t.entryPrice.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
-      <td>${t.tp.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
-      <td>${t.sl1.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
-      <td>${t.exitPrice.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
-      <td class="${isWin ? 'win' : 'loss'}">${isWin ? '✅ 익절' : '❌ 손절'}</td>
-      <td class="${pnlCls}">${t.pnl >= 0 ? '+' : ''}${t.pnl}%</td>
+      <td>$${t.entryPrice.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+      <td>$${t.tp.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+      <td>$${t.sl1.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+      <td>$${t.exitPrice.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+      <td class="${isWin?'win':'loss'}">${isWin?'✅ 익절':'❌ 손절'}</td>
+      <td class="${t.pnl>=0?'pnl-pos':'pnl-neg'}">${t.pnl>=0?'+':''}${t.pnl}%</td>
       <td>${t.rr}</td>
     </tr>`;
   }).join('');
@@ -384,14 +389,15 @@ function renderTable(trades) {
 
 async function runBacktest() {
   const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ 실행 중...';
+  btn.disabled = true; btn.textContent = '⏳ 실행 중...';
   document.getElementById('statsGrid').style.display = 'none';
   document.getElementById('chartWrap').style.display = 'none';
   document.getElementById('tableWrap').style.display = 'none';
+  document.getElementById('statusMsg').classList.remove('show');
 
-  const instId       = document.getElementById('instId').value;
-  const candleCount  = parseInt(document.getElementById('candleCount').value);
+  const symbol       = document.getElementById('symbol').value;
+  const startTs      = new Date(document.getElementById('startDate').value).getTime();
+  const endTs        = new Date(document.getElementById('endDate').value).getTime() + 86400000;
   const lookback     = parseInt(document.getElementById('lookback').value);
   const dropPct      = parseFloat(document.getElementById('dropPct').value) / 100;
   const volMult      = parseFloat(document.getElementById('volMult').value);
@@ -399,30 +405,30 @@ async function runBacktest() {
   const pullbackBars = parseInt(document.getElementById('pullbackBars').value);
 
   try {
-    setStatus(`📥 ${instId} 5분봉 데이터 수집 중...`);
-    const candles = await fetchCandles(instId, candleCount);
-    setStatus(`✅ ${candles.length}개 캔들 수집 완료 — 백테스트 실행 중...`);
+    setProgress(0, '데이터 수집 시작...');
+    const candles = await fetchCandles(symbol, startTs, endTs);
+    setProgress(100, `✅ ${candles.length.toLocaleString()}개 캔들 수집 완료`);
 
     const { trades, debug } = backtest(candles, { lookback, dropPct, volMult, bodyRatio, pullbackBars });
 
-    const debugMsg = `✅ ${candles.length}개 캔들 | 하락조건 통과: ${debug.drop}개 | 거래량급등: ${debug.vol}개 | 장대양봉: ${debug.body}개 | 되돌림진입: ${debug.entry}개 | 최종거래: ${trades.length}건`;
-    setStatus(debugMsg);
+    setStatus(`캔들 ${candles.length.toLocaleString()}개 | 하락조건: ${debug.drop}개 → 거래량급등: ${debug.vol}개 → 장대양봉: ${debug.body}개 → 되돌림진입: ${debug.entry}개 → 최종: ${trades.length}건`);
 
     if (!trades.length) {
       document.getElementById('tableWrap').style.display = 'block';
-      document.getElementById('tradeBody').innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;padding:24px">조건에 맞는 신호 없음 — 파라미터를 더 느슨하게 조정해봐</td></tr>';
+      document.getElementById('tradeBody').innerHTML =
+        '<tr><td colspan="11" style="text-align:center;color:#888;padding:24px">조건에 맞는 신호 없음 — 파라미터를 조정해봐</td></tr>';
     } else {
       renderStats(trades);
       renderChart(trades);
       renderTable(trades);
     }
-  } catch (e) {
-    setStatus(`❌ 오류: ${e.message} — OKX API 접근 실패일 수 있음 (CORS). 크롬으로 열어봐.`);
+  } catch(e) {
+    hideProgress();
+    setStatus(`❌ 오류: ${e.message}`);
     console.error(e);
   }
 
-  btn.disabled = false;
-  btn.textContent = '▶ 실행';
+  btn.disabled = false; btn.textContent = '▶ 실행';
 }
 </script>
 </body>
