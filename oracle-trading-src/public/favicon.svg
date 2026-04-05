@@ -1,7 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-  <!-- Dark background -->
-  <rect width="48" height="48" fill="#0d0800"/>
-  <!-- Gold circle border -->
+  <!-- Gold circle (no square background) -->
   <circle cx="24" cy="24" r="22" fill="#0d0800" stroke="#D4AF37" stroke-width="1.5"/>
   <!-- Ascending bars -->
   <rect x="10" y="33" width="5" height="7"  rx="1" fill="#D4AF37" opacity="0.65"/>
