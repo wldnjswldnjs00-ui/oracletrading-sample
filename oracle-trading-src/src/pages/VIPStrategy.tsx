@@ -263,7 +263,7 @@ export default function VIPStrategy() {
                         <p className="text-foreground font-mono notranslate" style={{ fontSize: 13, fontWeight: 700 }}>{level.investment.toFixed(0)}</p>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <p className="text-muted-foreground" style={{ fontSize: 10, marginBottom: 2 }}>% of Strategy</p>
+                        <p className="text-muted-foreground" style={{ fontSize: 10, marginBottom: 2 }}>% of Capital</p>
                         <p className="text-accent font-mono notranslate" style={{ fontSize: 13, fontWeight: 700 }}>{level.percentOfTotal.toFixed(2)}%</p>
                       </div>
                     </div>
@@ -276,14 +276,14 @@ export default function VIPStrategy() {
             <div className="card-gold-glow p-6">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700 }}>
-                  <span className="notranslate">{compoundingValue}</span>-<span className="notranslate">{unitLabel}</span> Compounding Growth
+                  <span className="notranslate">{compoundingValue}</span><span>-</span><span className="notranslate">{unitLabel}</span><span> Compounding Growth</span>
                 </h3>
                 <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                   <span className="text-muted-foreground">Final: <span className="text-gold font-mono notranslate">{finalBalance.toLocaleString()}</span></span>
                 </div>
               </div>
               <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
-                Projected balance assuming <span className="notranslate">{targetMonthlyReturn}</span>% monthly return. Chart updates when you change any parameter.
+                <span>Projected balance assuming </span><span className="notranslate">{targetMonthlyReturn}</span><span>% monthly return. Chart updates when you change any parameter.</span>
               </p>
               <div style={{ height: 420 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -318,7 +318,7 @@ export default function VIPStrategy() {
               <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: 'color-mix(in oklab, var(--primary) 5%, transparent)', border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)', display: 'flex', gap: 10 }}>
                 <AlertCircle style={{ width: 16, height: 16, color: 'var(--gold)', flexShrink: 0, marginTop: 2 }} />
                 <p className="text-muted-foreground" style={{ fontSize: 11, lineHeight: 1.6 }}>
-                  Projections assume consistent <span className="notranslate">{targetMonthlyReturn}</span>% monthly return through strategy execution. Past performance does not guarantee future results.
+                  <span>Projections assume consistent </span><span className="notranslate">{targetMonthlyReturn}</span><span>% monthly return through strategy execution. Past performance does not guarantee future results.</span>
                 </p>
               </div>
             </div>
@@ -335,10 +335,10 @@ export default function VIPStrategy() {
               ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { step: 1, text: <><strong className="text-foreground">Entry (Level 1):</strong> Buy <span className="notranslate">{martingaleData.levels[0]?.shares.toFixed(4) ?? '—'}</span> units at <span className="notranslate">{currentAssetPrice.toFixed(2)}</span> → Deploy <span className="notranslate">{martingaleData.levels[0]?.investment.toFixed(0) ?? '—'}</span></> },
-                  { step: 2, text: martingaleData.levels.length > 1 ? <><strong className="text-foreground">After <span className="notranslate">{priceDropPercent}</span>% drop:</strong> Price reaches <span className="notranslate">{martingaleData.levels[1]?.price.toFixed(2)}</span> → Buy <span className="notranslate">{martingaleData.levels[1]?.shares.toFixed(4)}</span> more units</> : <><strong className="text-foreground">After <span className="notranslate">{priceDropPercent}</span>% drop:</strong> Only 1 level configured — increase entry levels to use this step.</> },
-                  { step: 3, text: <><strong className="text-foreground">Continue:</strong> Repeat for all <span className="notranslate">{entryLevels}</span> levels, accumulating <span className="notranslate">{martingaleData.totalShares.toFixed(4)}</span> total units</> },
-                  { step: 4, text: <><strong className="text-foreground">Exit target:</strong> Sell all <span className="notranslate">{martingaleData.totalShares.toFixed(4)}</span> units at <span className="notranslate">{martingaleData.averagePrice.toFixed(2)}</span> or above → Recover full investment</> },
+                  { step: 1, text: <><strong className="text-foreground">Entry (Level 1):</strong><span> Buy </span><span className="notranslate">{martingaleData.levels[0]?.shares.toFixed(4) ?? '—'}</span><span> units at </span><span className="notranslate">{currentAssetPrice.toFixed(2)}</span><span> → Deploy </span><span className="notranslate">{martingaleData.levels[0]?.investment.toFixed(0) ?? '—'}</span></> },
+                  { step: 2, text: martingaleData.levels.length > 1 ? <><strong className="text-foreground"><span>After </span><span className="notranslate">{priceDropPercent}</span><span>% drop:</span></strong><span> Price reaches </span><span className="notranslate">{martingaleData.levels[1]?.price.toFixed(2)}</span><span> → Buy </span><span className="notranslate">{martingaleData.levels[1]?.shares.toFixed(4)}</span><span> more units</span></> : <><strong className="text-foreground"><span>After </span><span className="notranslate">{priceDropPercent}</span><span>% drop:</span></strong><span> Only 1 level configured — increase entry levels to use this step.</span></> },
+                  { step: 3, text: <><strong className="text-foreground">Continue:</strong><span> Repeat for all </span><span className="notranslate">{entryLevels}</span><span> levels, accumulating </span><span className="notranslate">{martingaleData.totalShares.toFixed(4)}</span><span> total units</span></> },
+                  { step: 4, text: <><strong className="text-foreground">Exit target:</strong><span> Sell all </span><span className="notranslate">{martingaleData.totalShares.toFixed(4)}</span><span> units at </span><span className="notranslate">{martingaleData.averagePrice.toFixed(2)}</span><span> or above → Recover full investment</span></> },
                 ].map(({ step, text }) => (
                   <div key={step} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                     <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'color-mix(in oklab, var(--primary) 20%, transparent)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, fontWeight: 700 }}>{step}</span>

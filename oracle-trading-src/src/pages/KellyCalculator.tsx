@@ -163,7 +163,7 @@ export default function KellyCalculator() {
                       How many trades to simulate? Set this to see your projected balance after e.g. 50 or 100 consecutive trades at the Kelly fraction above.
                     </p>
                     <label className="text-muted-foreground" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Number of Trades</label>
-                    <input type="number" value={simulatorTrades} min={1} max={100000000}
+                    <input type="number" value={simulatorTrades} min={1} max={100000000} step={1}
                       onChange={e => setSimulatorTrades(Math.max(1, Math.min(100000000, Math.round(parseNum(e.target.value)))))}
                       className="w-full px-3 py-2 rounded-lg bg-input border border-primary/20 text-foreground font-mono text-sm focus:outline-none focus:border-primary" />
                     <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 3 }}>Range: 1 – 100,000,000 trades</p>
@@ -228,7 +228,7 @@ export default function KellyCalculator() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <TrendingUp style={{ width: 20, height: 20, color: 'var(--gold)' }} />
-                  Expected Growth Projection (<span className="notranslate">{simulatorTrades.toLocaleString()}</span> Trades)
+                  <span>Expected Growth Projection (</span><span className="notranslate">{simulatorTrades.toLocaleString()}</span><span> Trades)</span>
                 </h3>
                 <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                   <span className="text-muted-foreground">Starting: <span className="text-gold font-mono notranslate">{startingCapital.toLocaleString()}</span></span>
@@ -236,7 +236,7 @@ export default function KellyCalculator() {
                 </div>
               </div>
               <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
-                Simulates expected capital growth over <span className="notranslate">{simulatorTrades.toLocaleString()}</span> trades using selected Kelly fraction and your input parameters. Chart updates automatically as you adjust any setting.
+                <span>Simulates expected capital growth over </span><span className="notranslate">{simulatorTrades.toLocaleString()}</span><span> trades using selected Kelly fraction and your input parameters. Chart updates automatically as you adjust any setting.</span>
               </p>
               <div style={{ height: 420, width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">

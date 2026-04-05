@@ -170,9 +170,9 @@ export default function MartingaleSimulator() {
                     <AlertCircle style={{ width: 20, height: 20, color: 'var(--gold)', flexShrink: 0 }} />
                     <p className="text-muted-foreground" style={{ fontSize: 13 }}>
                       {result.capitalOk ? (
-                        <>Strategy fits within your capital. Average entry: <span className="notranslate">{result.avgPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>. Break-even at <span className="notranslate">{result.breakEvenPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>.</>
+                        <><span>Strategy fits within your capital. Average entry: </span><span className="notranslate">{result.avgPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span><span>. Break-even at </span><span className="notranslate">{result.breakEvenPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span><span>.</span></>
                       ) : (
-                        <>Strategy requires <span className="notranslate">{result.totalCapitalRequired.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> but only <span className="notranslate">{availableCapital.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> available. Reduce position sizes or levels.</>
+                        <><span>Strategy requires </span><span className="notranslate">{result.totalCapitalRequired.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span><span> but only </span><span className="notranslate">{availableCapital.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span><span> available. Reduce position sizes or levels.</span></>
                       )}
                     </p>
                   </div>

@@ -161,7 +161,7 @@ export default function CompoundCalculator() {
             </div>
             <div className="bg-card/50 py-4 border-y border-primary/20" style={{ marginLeft: '-1.5rem', marginRight: '-1.5rem', paddingLeft: '1.5rem', paddingRight: '1.5rem' }}><AdSense slot="1234567893" format="horizontal" responsive={true} /></div>
             <div className="card-gold-glow" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: 24 }}><h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700 }}><span className="notranslate">{durationUnit}</span>-by-<span className="notranslate">{durationUnit}</span> Breakdown</h3></div>
+              <div style={{ padding: 24 }}><h3 className="text-foreground" style={{ fontSize: 17, fontWeight: 700 }}><span className="notranslate">{durationUnit}</span><span>-by-</span><span className="notranslate">{durationUnit}</span><span> Breakdown</span></h3></div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
