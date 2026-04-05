@@ -214,6 +214,7 @@ function backtest(candles, params) {
   const { lookback, dropPct, volMult, bodyRatio, pullbackBars } = params;
   const volMA = calcVolMA(candles, 20);
   const trades = [];
+  const debug = { drop: 0, vol: 0, body: 0, entry: 0 };
   let i = lookback;
 
   while (i < candles.length - pullbackBars - 1) {
@@ -224,15 +225,18 @@ function backtest(candles, params) {
     // 1. 고점 대비 하락
     const swingHigh = Math.max(...candles.slice(i - lookback, i).map(x => x.high));
     if (c.close >= swingHigh * (1 - dropPct)) { i++; continue; }
+    debug.drop++;
 
     // 2. 거래량 급등
     if (c.vol < vm * volMult) { i++; continue; }
+    debug.vol++;
 
     // 3. 장대양봉
     const range = c.high - c.low;
     if (range === 0) { i++; continue; }
     const body = Math.abs(c.close - c.open);
     if (body / range < bodyRatio || c.close <= c.open) { i++; continue; }
+    debug.body++;
 
     // 타점 설정
     const entryLevel = candles[i - 1].high;
@@ -252,6 +256,7 @@ function backtest(candles, params) {
       }
     }
     if (entryPrice === null) { i++; continue; }
+    debug.entry++;
 
     // 5. 결과 추적
     let result = null, exitPrice = null, exitBar = null;
@@ -279,7 +284,7 @@ function backtest(candles, params) {
 
     i = exitBar + 1;
   }
-  return trades;
+  return { trades, debug };
 }
 
 function renderStats(trades) {
@@ -398,18 +403,21 @@ async function runBacktest() {
     const candles = await fetchCandles(instId, candleCount);
     setStatus(`✅ ${candles.length}개 캔들 수집 완료 — 백테스트 실행 중...`);
 
-    const trades = backtest(candles, { lookback, dropPct, volMult, bodyRatio, pullbackBars });
+    const { trades, debug } = backtest(candles, { lookback, dropPct, volMult, bodyRatio, pullbackBars });
+
+    const debugMsg = `✅ ${candles.length}개 캔들 | 하락조건 통과: ${debug.drop}개 | 거래량급등: ${debug.vol}개 | 장대양봉: ${debug.body}개 | 되돌림진입: ${debug.entry}개 | 최종거래: ${trades.length}건`;
+    setStatus(debugMsg);
 
     if (!trades.length) {
-      setStatus('⚠️ 조건에 맞는 신호 없음. 파라미터를 조정해봐.');
+      document.getElementById('tableWrap').style.display = 'block';
+      document.getElementById('tradeBody').innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;padding:24px">조건에 맞는 신호 없음 — 파라미터를 더 느슨하게 조정해봐</td></tr>';
     } else {
-      setStatus(`✅ 완료 — 총 ${trades.length}건 거래 감지`);
       renderStats(trades);
       renderChart(trades);
       renderTable(trades);
     }
   } catch (e) {
-    setStatus(`❌ 오류: ${e.message}`);
+    setStatus(`❌ 오류: ${e.message} — OKX API 접근 실패일 수 있음 (CORS). 크롬으로 열어봐.`);
     console.error(e);
   }
 
