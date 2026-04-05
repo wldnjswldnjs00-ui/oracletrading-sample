@@ -84,7 +84,7 @@ export default function Home() {
         <div style={{ maxWidth: 720 }}>
           <p className="text-gold" style={{ fontSize: 13, fontWeight: 600, marginBottom: 16 }}>✨ Completely Free Platform</p>
           <h1 className="text-foreground" style={{ fontSize: 56, fontWeight: 800, lineHeight: 1.15, marginBottom: 24, fontFamily: 'Playfair Display, serif' }}>
-            Master Your <span className="text-gold">Investment</span> Strategy
+            <span>Master Your </span><span className="text-gold">Investment</span><span> Strategy</span>
           </h1>
           <p className="text-muted-foreground" style={{ fontSize: 18, lineHeight: 1.7, marginBottom: 32 }}>
             Precision tools for calculating compound growth, optimal position sizing, and advanced trading strategies.
