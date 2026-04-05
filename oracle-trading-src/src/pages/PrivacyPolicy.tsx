@@ -87,7 +87,7 @@ To exercise these rights, please contact us at the email below.`,
       content: `If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:
 
 Website: oracletrading.site
-Email: contact@oracletrading.site
+Email: oracletrading.help@gmail.com
 
 We will respond to your inquiry within a reasonable timeframe.`,
     },

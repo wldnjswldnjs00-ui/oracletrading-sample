@@ -7,6 +7,7 @@ export function Footer() {
       <div className="container" style={{ paddingTop: 24, paddingBottom: 24, textAlign: 'center' }}>
         <p className="text-muted-foreground" style={{ fontSize: 12 }}>Oracle Trading © 2026. Professional Investment Strategy Calculator.</p>
         <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 6 }}>Disclaimer: For educational purposes only. Always consult with a financial advisor.</p>
+        <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>Contact: <a href="mailto:oracletrading.help@gmail.com" style={{ color: 'var(--gold)', textDecoration: 'none', opacity: 0.8 }}>oracletrading.help@gmail.com</a></p>
         <div style={{ marginTop: 12 }}>
           <button onClick={() => navigate('/privacy-policy')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: 11, textDecoration: 'underline', opacity: 0.7 }}>
             Privacy Policy
