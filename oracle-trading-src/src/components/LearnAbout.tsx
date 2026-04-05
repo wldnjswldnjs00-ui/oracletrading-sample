@@ -38,7 +38,7 @@ export function LearnAbout({ topic, sections }: LearnAboutProps) {
         >
           <span style={{ fontSize: 16 }}>📖</span>
           <span className="text-gold" style={{ fontSize: 14, fontWeight: 600 }}>
-            Learn About {topic}
+            <span>Learn About </span><span>{topic}</span>
           </span>
           <span style={{ marginLeft: 'auto' }} className="text-muted-foreground">
             {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
