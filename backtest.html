@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OKX BTC 백테스트 시뮬레이터</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d0d; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 24px; }
+  h1 { color: #D4AF37; font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 24px; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
+  .ctrl-group label { font-size: 11px; color: #888; }
+  .ctrl-group input, .ctrl-group select {
+    background: #111; border: 1px solid #444; border-radius: 6px;
+    color: #fff; padding: 6px 10px; font-size: 13px; width: 100%;
+  }
+  .ctrl-group input:focus, .ctrl-group select:focus {
+    outline: none; border-color: #D4AF37;
+  }
+  button {
+    padding: 8px 24px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: 600; align-self: flex-end;
+  }
+  #runBtn { background: #D4AF37; color: #000; }
+  #runBtn:hover { background: #f0c93a; }
+  #runBtn:disabled { background: #555; color: #999; cursor: not-allowed; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+    padding: 14px; text-align: center;
+  }
+  .stat-card .val { font-size: 24px; font-weight: 700; color: #D4AF37; }
+  .stat-card .lbl { font-size: 11px; color: #888; margin-top: 4px; }
+  .stat-card.green .val { color: #4caf7d; }
+  .stat-card.red .val { color: #e05c5c; }
+
+  .chart-wrap {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .chart-wrap h3 { color: #D4AF37; font-size: 14px; margin-bottom: 12px; }
+  canvas { max-height: 280px; }
+
+  .table-wrap {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+    padding: 16px; overflow-x: auto;
+  }
+  .table-wrap h3 { color: #D4AF37; font-size: 14px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #111; color: #888; padding: 8px 12px; text-align: left;
+       border-bottom: 1px solid #333; white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid #222; white-space: nowrap; }
+  tr:hover td { background: #222; }
+  .win { color: #4caf7d; font-weight: 600; }
+  .loss { color: #e05c5c; font-weight: 600; }
+  .pnl-pos { color: #4caf7d; }
+  .pnl-neg { color: #e05c5c; }
+
+  #status {
+    background: #1a1a1a; border: 1px solid #444; border-radius: 8px;
+    padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #aaa;
+    display: none;
+  }
+  #status.show { display: block; }
+</style>
+</head>
+<body>
+
+<h1>📊 OKX BTC 백테스트 시뮬레이터</h1>
+<p class="subtitle">거래량 급등 + 장대양봉 + 되돌림 타점 전략 — 5분봉 기준</p>
+
+<!-- 파라미터 -->
+<div class="controls">
+  <div class="ctrl-group">
+    <label>종목</label>
+    <select id="instId">
+      <option value="BTC-USDT-SWAP">BTC/USDT 무기한</option>
+      <option value="ETH-USDT-SWAP">ETH/USDT 무기한</option>
+      <option value="SOL-USDT-SWAP">SOL/USDT 무기한</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label>캔들 수 (최대 1440)</label>
+    <input type="number" id="candleCount" value="500" min="200" max="1440">
+  </div>
+  <div class="ctrl-group">
+    <label>고점 탐지 범위 (캔들)</label>
+    <input type="number" id="lookback" value="100" min="20" max="200">
+  </div>
+  <div class="ctrl-group">
+    <label>최소 하락률 (%)</label>
+    <input type="number" id="dropPct" value="4" min="1" max="20" step="0.5">
+  </div>
+  <div class="ctrl-group">
+    <label>거래량 급등 배수</label>
+    <input type="number" id="volMult" value="1.8" min="1" max="5" step="0.1">
+  </div>
+  <div class="ctrl-group">
+    <label>장대양봉 몸통 비율</label>
+    <input type="number" id="bodyRatio" value="0.45" min="0.1" max="0.9" step="0.05">
+  </div>
+  <div class="ctrl-group">
+    <label>되돌림 대기 (캔들)</label>
+    <input type="number" id="pullbackBars" value="20" min="5" max="50">
+  </div>
+  <button id="runBtn" onclick="runBacktest()">▶ 실행</button>
+</div>
+
+<div id="status"></div>
+
+<!-- 통계 -->
+<div class="stats-grid" id="statsGrid" style="display:none"></div>
+
+<!-- 누적 손익 차트 -->
+<div class="chart-wrap" id="chartWrap" style="display:none">
+  <h3>📈 누적 손익 곡선 (%)</h3>
+  <canvas id="pnlChart"></canvas>
+</div>
+
+<!-- 거래 내역 -->
+<div class="table-wrap" id="tableWrap" style="display:none">
+  <h3>📋 거래 내역</h3>
+  <table id="tradeTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>신호 시간</th>
+        <th>진입 시간</th>
+        <th>청산 시간</th>
+        <th>진입가</th>
+        <th>익절가</th>
+        <th>손절가</th>
+        <th>청산가</th>
+        <th>결과</th>
+        <th>손익(%)</th>
+        <th>RR비율</th>
+      </tr>
+    </thead>
+    <tbody id="tradeBody"></tbody>
+  </table>
+</div>
+
+<script>
+let pnlChartInst = null;
+
+function setStatus(msg) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function fmt(ts) {
+  const d = new Date(ts);
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+async function fetchCandles(instId, total) {
+  const url = 'https://www.okx.com/api/v5/market/history-candles';
+  let all = [];
+  let after = '';
+  const limit = 100;
+
+  while (all.length < total) {
+    const need = Math.min(limit, total - all.length);
+    let endpoint = `${url}?instId=${instId}&bar=5m&limit=${need}`;
+    if (after) endpoint += `&after=${after}`;
+
+    const res = await fetch(endpoint);
+    const json = await res.json();
+    const data = json.data || [];
+    if (!data.length) break;
+
+    all = all.concat(data);
+    after = data[data.length - 1][0];
+    if (data.length < need) break;
+  }
+
+  // [ts, open, high, low, close, vol, ...]
+  return all
+    .filter(c => c[8] === '1')
+    .slice(0, total)
+    .map(c => ({
+      ts:    parseInt(c[0]),
+      open:  parseFloat(c[1]),
+      high:  parseFloat(c[2]),
+      low:   parseFloat(c[3]),
+      close: parseFloat(c[4]),
+      vol:   parseFloat(c[5]),
+    }))
+    .sort((a, b) => a.ts - b.ts);
+}
+
+function calcVolMA(candles, period) {
+  return candles.map((_, i) => {
+    if (i < period) return null;
+    const slice = candles.slice(i - period, i);
+    return slice.reduce((s, c) => s + c.vol, 0) / period;
+  });
+}
+
+function backtest(candles, params) {
+  const { lookback, dropPct, volMult, bodyRatio, pullbackBars } = params;
+  const volMA = calcVolMA(candles, 20);
+  const trades = [];
+  let i = lookback;
+
+  while (i < candles.length - pullbackBars - 1) {
+    const c = candles[i];
+    const vm = volMA[i];
+    if (!vm) { i++; continue; }
+
+    // 1. 고점 대비 하락
+    const swingHigh = Math.max(...candles.slice(i - lookback, i).map(x => x.high));
+    if (c.close >= swingHigh * (1 - dropPct)) { i++; continue; }
+
+    // 2. 거래량 급등
+    if (c.vol < vm * volMult) { i++; continue; }
+
+    // 3. 장대양봉
+    const range = c.high - c.low;
+    if (range === 0) { i++; continue; }
+    const body = Math.abs(c.close - c.open);
+    if (body / range < bodyRatio || c.close <= c.open) { i++; continue; }
+
+    // 타점 설정
+    const entryLevel = candles[i - 1].high;
+    const sl1 = c.low;
+    const sl2 = Math.min(...candles.slice(Math.max(0, i - lookback), i).map(x => x.low));
+    const tp  = swingHigh;
+
+    if (tp <= entryLevel) { i++; continue; }
+
+    // 4. 되돌림 대기
+    let entryPrice = null, entryBar = null;
+    for (let j = i + 1; j < Math.min(i + 1 + pullbackBars, candles.length); j++) {
+      if (candles[j].low <= entryLevel) {
+        entryPrice = entryLevel;
+        entryBar = j;
+        break;
+      }
+    }
+    if (entryPrice === null) { i++; continue; }
+
+    // 5. 결과 추적
+    let result = null, exitPrice = null, exitBar = null;
+    for (let k = entryBar + 1; k < candles.length; k++) {
+      const f = candles[k];
+      if (f.low <= sl1) {
+        result = 'STOP LOSS 1차'; exitPrice = sl1; exitBar = k; break;
+      }
+      if (f.high >= tp) {
+        result = '익절 (전고점)'; exitPrice = tp; exitBar = k; break;
+      }
+    }
+    if (!result) { i = entryBar + 1; continue; }
+
+    const rr = (entryPrice - sl1) > 0 ? (tp - entryPrice) / (entryPrice - sl1) : 0;
+    const pnl = (exitPrice - entryPrice) / entryPrice * 100;
+
+    trades.push({
+      signalTs:   candles[i].ts,
+      entryTs:    candles[entryBar].ts,
+      exitTs:     candles[exitBar].ts,
+      entryPrice, tp, sl1, sl2, exitPrice,
+      result, pnl: +pnl.toFixed(2), rr: +rr.toFixed(2)
+    });
+
+    i = exitBar + 1;
+  }
+  return trades;
+}
+
+function renderStats(trades) {
+  const wins   = trades.filter(t => t.result === '익절 (전고점)');
+  const losses = trades.filter(t => t.result !== '익절 (전고점)');
+  const winRate = trades.length ? (wins.length / trades.length * 100).toFixed(1) : 0;
+  const avgPnl  = trades.length ? (trades.reduce((s, t) => s + t.pnl, 0) / trades.length).toFixed(2) : 0;
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0).toFixed(2);
+  const avgRR   = trades.length ? (trades.reduce((s, t) => s + t.rr, 0) / trades.length).toFixed(1) : 0;
+
+  const grid = document.getElementById('statsGrid');
+  grid.style.display = 'grid';
+  const pnlClass = totalPnl >= 0 ? 'green' : 'red';
+  const avgClass  = avgPnl >= 0 ? 'green' : 'red';
+  grid.innerHTML = `
+    <div class="stat-card"><div class="val">${trades.length}</div><div class="lbl">총 거래</div></div>
+    <div class="stat-card green"><div class="val">${wins.length}</div><div class="lbl">익절</div></div>
+    <div class="stat-card red"><div class="val">${losses.length}</div><div class="lbl">손절</div></div>
+    <div class="stat-card"><div class="val">${winRate}%</div><div class="lbl">승률</div></div>
+    <div class="stat-card ${avgClass}"><div class="val">${avgPnl > 0 ? '+' : ''}${avgPnl}%</div><div class="lbl">평균 손익</div></div>
+    <div class="stat-card ${pnlClass}"><div class="val">${totalPnl > 0 ? '+' : ''}${totalPnl}%</div><div class="lbl">누적 손익</div></div>
+    <div class="stat-card"><div class="val">${avgRR}</div><div class="lbl">평균 RR비율</div></div>
+  `;
+}
+
+function renderChart(trades) {
+  const wrap = document.getElementById('chartWrap');
+  wrap.style.display = 'block';
+  if (pnlChartInst) pnlChartInst.destroy();
+
+  let cumPnl = 0;
+  const labels = ['시작'];
+  const data   = [0];
+  trades.forEach((t, idx) => {
+    cumPnl += t.pnl;
+    labels.push(`#${idx + 1}`);
+    data.push(+cumPnl.toFixed(2));
+  });
+
+  const ctx = document.getElementById('pnlChart').getContext('2d');
+  pnlChartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '누적 손익 (%)',
+        data,
+        borderColor: '#D4AF37',
+        backgroundColor: 'rgba(212,175,55,0.08)',
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: data.map((v, i) => {
+          if (i === 0) return '#D4AF37';
+          return data[i] >= data[i-1] ? '#4caf7d' : '#e05c5c';
+        }),
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#666', maxTicksLimit: 10 }, grid: { color: '#222' } },
+        y: { ticks: { color: '#888', callback: v => v + '%' }, grid: { color: '#222' } }
+      }
+    }
+  });
+}
+
+function renderTable(trades) {
+  const wrap = document.getElementById('tableWrap');
+  wrap.style.display = 'block';
+  const tbody = document.getElementById('tradeBody');
+  if (!trades.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#666;padding:24px">조건에 맞는 신호 없음</td></tr>';
+    return;
+  }
+  tbody.innerHTML = trades.map((t, idx) => {
+    const isWin = t.result === '익절 (전고점)';
+    const pnlCls = t.pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+    return `<tr>
+      <td>${idx + 1}</td>
+      <td>${fmt(t.signalTs)}</td>
+      <td>${fmt(t.entryTs)}</td>
+      <td>${fmt(t.exitTs)}</td>
+      <td>${t.entryPrice.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
+      <td>${t.tp.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
+      <td>${t.sl1.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
+      <td>${t.exitPrice.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
+      <td class="${isWin ? 'win' : 'loss'}">${isWin ? '✅ 익절' : '❌ 손절'}</td>
+      <td class="${pnlCls}">${t.pnl >= 0 ? '+' : ''}${t.pnl}%</td>
+      <td>${t.rr}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function runBacktest() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 실행 중...';
+  document.getElementById('statsGrid').style.display = 'none';
+  document.getElementById('chartWrap').style.display = 'none';
+  document.getElementById('tableWrap').style.display = 'none';
+
+  const instId       = document.getElementById('instId').value;
+  const candleCount  = parseInt(document.getElementById('candleCount').value);
+  const lookback     = parseInt(document.getElementById('lookback').value);
+  const dropPct      = parseFloat(document.getElementById('dropPct').value) / 100;
+  const volMult      = parseFloat(document.getElementById('volMult').value);
+  const bodyRatio    = parseFloat(document.getElementById('bodyRatio').value);
+  const pullbackBars = parseInt(document.getElementById('pullbackBars').value);
+
+  try {
+    setStatus(`📥 ${instId} 5분봉 데이터 수집 중...`);
+    const candles = await fetchCandles(instId, candleCount);
+    setStatus(`✅ ${candles.length}개 캔들 수집 완료 — 백테스트 실행 중...`);
+
+    const trades = backtest(candles, { lookback, dropPct, volMult, bodyRatio, pullbackBars });
+
+    if (!trades.length) {
+      setStatus('⚠️ 조건에 맞는 신호 없음. 파라미터를 조정해봐.');
+    } else {
+      setStatus(`✅ 완료 — 총 ${trades.length}건 거래 감지`);
+      renderStats(trades);
+      renderChart(trades);
+      renderTable(trades);
+    }
+  } catch (e) {
+    setStatus(`❌ 오류: ${e.message}`);
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ 실행';
+}
+</script>
+</body>
+</html>
