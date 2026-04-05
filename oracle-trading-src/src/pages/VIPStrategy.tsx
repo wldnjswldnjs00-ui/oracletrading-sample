@@ -250,7 +250,7 @@ export default function VIPStrategy() {
                 {martingaleData.levels.map(level => (
                   <div key={level.level} style={{ padding: '14px 16px', borderRadius: 10, background: 'color-mix(in oklab, var(--primary) 5%, transparent)', border: '1px solid color-mix(in oklab, var(--primary) 10%, transparent)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span className="text-gold" style={{ fontSize: 13, fontWeight: 700 }}>Level {level.level}</span>
+                      <span className="text-gold notranslate" style={{ fontSize: 13, fontWeight: 700 }}>Level {level.level}</span>
                       <span className="text-accent font-mono notranslate" style={{ fontSize: 13, fontWeight: 700 }}>{level.price.toFixed(2)}</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -279,7 +279,7 @@ export default function VIPStrategy() {
                   <span className="notranslate">{compoundingValue}</span><span>-</span><span className="notranslate">{unitLabel}</span><span> Compounding Growth</span>
                 </h3>
                 <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
-                  <span className="text-muted-foreground">Final: <span className="text-gold font-mono notranslate">{finalBalance.toLocaleString()}</span></span>
+                  <span className="text-muted-foreground"><span>Final: </span><span className="text-gold font-mono notranslate">{finalBalance.toLocaleString()}</span></span>
                 </div>
               </div>
               <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
@@ -329,7 +329,7 @@ export default function VIPStrategy() {
               {kellyPct === 0 ? (
                 <div style={{ padding: 16, borderRadius: 8, background: 'color-mix(in oklab, var(--destructive, #ef4444) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--destructive, #ef4444) 30%, transparent)' }}>
                   <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.6 }}>
-                    <strong className="text-foreground">⚠️ Kelly Criterion = 0%</strong> — The current win rate / profit ratio combination yields a negative or zero edge. The strategy recommends <strong className="text-foreground">no position</strong>. Adjust your win rate or profit ratio to generate a positive expected value before executing this strategy.
+                    <strong className="text-foreground">⚠️ Kelly Criterion = 0%</strong><span> — The current win rate / profit ratio combination yields a negative or zero edge. The strategy recommends </span><strong className="text-foreground">no position</strong><span>. Adjust your win rate or profit ratio to generate a positive expected value before executing this strategy.</span>
                   </p>
                 </div>
               ) : (

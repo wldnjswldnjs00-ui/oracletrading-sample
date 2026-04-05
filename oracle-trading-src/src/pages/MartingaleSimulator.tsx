@@ -207,7 +207,7 @@ export default function MartingaleSimulator() {
                       <tr key={i} style={{ borderBottom: '1px solid color-mix(in oklab, var(--primary) 5%, transparent)' }}
                         onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in oklab, var(--primary) 5%, transparent)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                        <td className="text-muted-foreground font-mono" style={{ padding: '16px 24px', fontSize: 13 }}>Level {l.level}</td>
+                        <td className="text-muted-foreground font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13 }}>Level {l.level}</td>
                         <td className="text-gold font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13 }}>{l.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}</td>
                         <td className="text-foreground font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13 }}>{l.positionSize}</td>
                         <td className="text-accent font-mono notranslate" style={{ padding: '16px 24px', fontSize: 13 }}>{l.averagePrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</td>
