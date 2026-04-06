@@ -89,8 +89,8 @@ export default function Home() {
       <AdBanner slot="2000000001" />
 
       {/* Tool Cards */}
-      <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
-        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 32 }}>
+      <section className="container" style={{ paddingTop: 40, paddingBottom: 40 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 24 }}>
           {tools.map((tool, i) => (
             <div
               key={tool.id}
@@ -148,8 +148,8 @@ export default function Home() {
       <AdBanner slot="2000000002" />
 
       {/* Why Oracle Trading */}
-      <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
-        <div style={{ maxWidth: 720, marginBottom: 48 }}>
+      <section className="container" style={{ paddingTop: 40, paddingBottom: 48 }}>
+        <div style={{ maxWidth: 720, marginBottom: 32 }}>
           <h2 className="text-foreground" style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, fontFamily: 'Playfair Display, serif' }}>Why Oracle Trading?</h2>
           <p className="text-muted-foreground" style={{ fontSize: 17 }}>Professional-grade calculation tools designed for every investor and trader.</p>
         </div>
