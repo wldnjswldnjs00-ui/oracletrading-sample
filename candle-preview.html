@@ -138,26 +138,26 @@
   <div class="section-sub">Professional-grade calculators for every strategy</div>
   <div class="tools-grid">
     <!-- 위 행 -->
-    <div class="tool-card">
+    <div class="tool-card" onclick="location.href='https://oracletrading.site/compound-calculator'">
       <div class="tool-icon">📈</div>
       <div class="tool-name">Compound Interest Calculator</div>
       <div class="tool-desc">See how your investment grows exponentially through compound interest over time.</div>
       <div class="tool-link">Explore →</div>
     </div>
-    <div class="tool-card">
+    <div class="tool-card" onclick="location.href='https://oracletrading.site/kelly-calculator'">
       <div class="tool-icon">📊</div>
       <div class="tool-name">Kelly Criterion Calculator</div>
       <div class="tool-desc">Determine optimal position sizing based on your win rate and risk-reward ratio.</div>
       <div class="tool-link">Explore →</div>
     </div>
     <!-- 아래 행 -->
-    <div class="tool-card">
+    <div class="tool-card" onclick="location.href='https://oracletrading.site/martingale-simulator'">
       <div class="tool-icon">🔀</div>
       <div class="tool-name">Martingale Simulator</div>
       <div class="tool-desc">Simulate pyramid entry strategy with custom drawdown levels and position scaling.</div>
       <div class="tool-link">Explore →</div>
     </div>
-    <div class="tool-card vip">
+    <div class="tool-card vip" onclick="location.href='https://oracletrading.site/vip-strategy'">
       <div class="vip-badge">VIP</div>
       <div class="tool-icon">👑</div>
       <div class="tool-name">VIP Strategy</div>
@@ -267,25 +267,25 @@ function genPrice(idx) {
 
   if (isLast) {
     // 장대양봉
-    close = open + (0.6 + Math.random() * 0.3);
-    high  = close + Math.random() * 0.1;
-    low   = open  - Math.random() * 0.05;
+    close = open + (1.8 + Math.random() * 0.8);
+    high  = close + Math.random() * 0.2;
+    low   = open  - Math.random() * 0.1;
   } else if (isPreLast) {
     // 큰 양봉
-    close = open + (0.25 + Math.random() * 0.15);
-    high  = close + Math.random() * 0.08;
-    low   = open  - Math.random() * 0.04;
+    close = open + (0.9 + Math.random() * 0.5);
+    high  = close + Math.random() * 0.15;
+    low   = open  - Math.random() * 0.08;
   } else {
     // 음봉 작게 or 양봉 중간
     const bull = Math.random() > 0.42;
     if (bull) {
-      close = open + (0.05 + Math.random() * 0.15);
-      high  = close + Math.random() * 0.06;
-      low   = open  - Math.random() * 0.03;
+      close = open + (0.2 + Math.random() * 0.45);
+      high  = close + Math.random() * 0.12;
+      low   = open  - Math.random() * 0.06;
     } else {
-      close = open - (0.02 + Math.random() * 0.07);
-      high  = open  + Math.random() * 0.04;
-      low   = close - Math.random() * 0.03;
+      close = open - (0.08 + Math.random() * 0.22);
+      high  = open  + Math.random() * 0.08;
+      low   = close - Math.random() * 0.06;
     }
   }
   lastClose = close;
