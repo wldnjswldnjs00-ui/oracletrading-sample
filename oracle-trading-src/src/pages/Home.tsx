@@ -62,15 +62,16 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="border-b border-primary/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header style={{ background: '#000', borderBottom: 'none' }} className="sticky top-0 z-50">
         <div className="container py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div style={{
               width: 40, height: 40, borderRadius: 8,
-              background: 'linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--primary) 70%, transparent))',
+              background: 'rgba(212,175,55,0.15)',
+              border: '1px solid rgba(212,175,55,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ color: 'var(--primary-foreground)', fontWeight: 700, fontSize: 14 }}>OT</span>
+              <span style={{ color: '#D4AF37', fontWeight: 700, fontSize: 14, fontFamily: 'Georgia, serif' }}>OT</span>
             </div>
             <div>
               <h1 className="text-foreground" style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Playfair Display, serif' }}>Oracle Trading</h1>
