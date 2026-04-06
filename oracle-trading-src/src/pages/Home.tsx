@@ -85,11 +85,45 @@ export default function Home() {
       {/* Hero - 3D Candle Chart */}
       <CandleChart />
 
+      {/* Hero Text */}
+      <div style={{ textAlign: 'center', padding: '40px 24px 48px', background: '#000' }}>
+        <h1 style={{
+          fontSize: 'clamp(28px, 5vw, 64px)', fontWeight: 800,
+          color: 'white', fontFamily: 'Playfair Display, Georgia, serif',
+          lineHeight: 1.1, marginBottom: 10,
+        }}>
+          Master Your <span style={{ color: '#D4AF37' }}>Investment</span> Strategy
+        </h1>
+        <p style={{
+          fontSize: 'clamp(11px, 1.5vw, 13px)', color: 'rgba(255,255,255,0.65)',
+          letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 20,
+        }}>
+          Professional tools for every trader
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(12px, 3vw, 32px)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: '#D4AF37', fontSize: 15 }}>👥</span>
+            <span className="notranslate" style={{ color: 'white', fontSize: 14, fontWeight: 700 }}>50,000+</span>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>users worldwide</span>
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>·</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 600 }}>100% Free</span>
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>·</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 600 }}>No signup required</span>
+          </div>
+        </div>
+      </div>
+
       {/* Ad 1 */}
       <AdBanner slot="2000000001" />
 
       {/* Tool Cards */}
-      <section className="container" style={{ paddingTop: 1600, paddingBottom: 64 }}>
+      <section className="container" style={{ paddingTop: 320, paddingBottom: 64 }}>
         <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 32 }}>
           {tools.map((tool, i) => (
             <div
@@ -148,7 +182,7 @@ export default function Home() {
       <AdBanner slot="2000000002" />
 
       {/* Why Oracle Trading */}
-      <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
+      <section className="container" style={{ paddingTop: 320, paddingBottom: 64 }}>
         <div style={{ maxWidth: 720, marginBottom: 48 }}>
           <h2 className="text-foreground" style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, fontFamily: 'Playfair Display, serif' }}>Why Oracle Trading?</h2>
           <p className="text-muted-foreground" style={{ fontSize: 17 }}>Professional-grade calculation tools designed for every investor and trader.</p>

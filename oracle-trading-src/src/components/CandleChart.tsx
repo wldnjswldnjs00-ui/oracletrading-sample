@@ -221,7 +221,7 @@ export default function CandleChart() {
   return (
     <section
       aria-label="3D candlestick chart animation"
-      style={{ width: '100%', height: isMobile ? '42vh' : '45vh', position: 'relative', overflow: 'hidden' }}
+      style={{ width: '100%', height: isMobile ? '42vh' : '50vh', position: 'relative', overflow: 'hidden' }}
     >
       <canvas
         ref={canvasRef}
@@ -231,55 +231,10 @@ export default function CandleChart() {
           position: 'absolute', bottom: 0, left: 0,
         }}
       />
-
-      {/* Hero text + stats overlay */}
-      <div style={{
-        position: 'absolute', bottom: isMobile ? 16 : 60, left: '50%',
-        transform: 'translateX(-50%)',
-        textAlign: 'center', pointerEvents: 'none', width: '100%',
-        padding: '0 24px',
-      }}>
-        <h1 style={{
-          fontSize: 'clamp(28px, 5vw, 64px)', fontWeight: 800,
-          color: 'white', fontFamily: 'Playfair Display, Georgia, serif',
-          lineHeight: 1.1, marginBottom: 10,
-        }}>
-          Master Your <span style={{ color: '#D4AF37' }}>Investment</span> Strategy
-        </h1>
-        <p style={{
-          fontSize: 'clamp(11px, 1.5vw, 13px)', color: 'rgba(255,255,255,0.65)',
-          letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 20,
-        }}>
-          Professional tools for every trader
-        </p>
-
-        {/* Stats badges */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: 'clamp(12px, 3vw, 32px)', flexWrap: 'wrap',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ color: '#D4AF37', fontSize: 15 }}>👥</span>
-            <span className="notranslate" style={{ color: 'white', fontSize: 14, fontWeight: 700 }}>50,000+</span>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>users worldwide</span>
-          </div>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>·</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
-            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 600 }}>100% Free</span>
-          </div>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>·</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
-            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 600 }}>No signup required</span>
-          </div>
-        </div>
-      </div>
-
       {/* Bottom fade */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        height: 140, background: 'linear-gradient(transparent, #000)',
+        height: 80, background: 'linear-gradient(transparent, #000)',
         pointerEvents: 'none',
       }} />
     </section>
