@@ -73,7 +73,7 @@ export default function MartingaleSimulator() {
       const totalUnits = sizes.reduce((a, b) => a + b, 0);
       const totalCapitalRequired = levels[levels.length - 1].cumulativeCapital;
       const avgPrice = levels[levels.length - 1].averagePrice;
-      const breakEvenPrice = avgPrice;
+      const breakEvenPrice = totalCapitalRequired / totalUnits;
       const profitAtTarget = totalUnits * avgPrice * (1 + targetProfit / 100) - totalCapitalRequired;
       const capitalOk = totalCapitalRequired <= availableCapital;
       return { levels, totalCapitalRequired, breakEvenPrice, profitAtTarget, capitalOk, avgPrice };
@@ -161,7 +161,7 @@ export default function MartingaleSimulator() {
                 <div className="card-gold-glow p-6" style={{ borderLeft: '4px solid var(--accent)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }} className="text-muted-foreground">
                     <TrendingUp style={{ width: 16, height: 16 }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Break-even Price</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Break-even Price (Avg Entry)</span>
                   </div>
                   <p className="text-accent font-mono notranslate" style={{ fontSize: 30, fontWeight: 900 }}>
                     {result ? result.breakEvenPrice.toLocaleString('en-US', { maximumFractionDigits: 2 }) : <span className="text-muted-foreground" style={{ fontSize: 14 }}>Invalid Input</span>}

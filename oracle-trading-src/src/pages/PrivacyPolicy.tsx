@@ -1,20 +1,14 @@
-import { useEffect } from 'react';
-import type { ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import type { ReactNode } from 'react';
 import { ArrowLeft, Shield } from 'lucide-react';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 export default function PrivacyPolicy() {
   const [, navigate] = useLocation();
-
-  useEffect(() => {
-    document.title = 'Privacy Policy | Oracle Trading';
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'Privacy Policy for Oracle Trading. Learn how we collect, use, and protect your data when you use our investment strategy calculators.');
-    return () => {
-      document.title = 'Oracle Trading - Investment Strategy Calculator | Compound Interest, Kelly Criterion, Martingale';
-      if (metaDesc) metaDesc.setAttribute('content', 'Professional investment strategy calculator. Calculate compound interest, optimal position sizing with Kelly Criterion, and martingale pyramid strategies. Free financial tools for serious traders.');
-    };
-  }, []);
+  usePageMeta(
+    'Privacy Policy | Oracle Trading',
+    'Privacy Policy for Oracle Trading. Learn how we collect, use, and protect your data when you use our free investment strategy calculators.'
+  );
 
   const linkStyle = { color: 'var(--gold)', textDecoration: 'underline' };
   const sections: { title: string; content: string | ReactNode }[] = [
@@ -84,12 +78,17 @@ To exercise these rights, please contact us at the email below.`,
     },
     {
       title: '9. Contact Us',
-      content: `If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:
-
-Website: oracletrading.site
-Email: oracletrading.help@gmail.com
-
-We will respond to your inquiry within a reasonable timeframe.`,
+      content: (
+        <>
+          If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:
+          <br /><br />
+          Website: <a href="https://oracletrading.site" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>oracletrading.site</a>
+          <br />
+          Email: <a href="mailto:oracletrading.help@gmail.com" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>oracletrading.help@gmail.com</a>
+          <br /><br />
+          We will respond to your inquiry within a reasonable timeframe.
+        </>
+      ),
     },
   ];
 

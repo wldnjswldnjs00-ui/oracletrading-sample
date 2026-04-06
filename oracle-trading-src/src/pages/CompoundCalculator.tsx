@@ -35,8 +35,8 @@ export default function CompoundCalculator() {
     if (newUnit === durationUnit) return;
     const toDays = durationUnit === 'Day' ? duration : durationUnit === 'Month' ? duration * 30 : duration * 365;
     const rawConverted = newUnit === 'Day' ? toDays : newUnit === 'Month' ? toDays / 30 : toDays / 365;
-    const unitDefaults: Record<DurationUnit, number> = { Day: 30, Month: 12, Year: 1 };
-    const converted = rawConverted >= 1 ? Math.min(600, Math.round(rawConverted)) : unitDefaults[newUnit];
+    const unitMin: Record<DurationUnit, number> = { Day: 1, Month: 1, Year: 1 };
+    const converted = Math.max(unitMin[newUnit], Math.min(600, Math.round(rawConverted)));
     setDuration(converted);
     setDurationUnit(newUnit);
   };

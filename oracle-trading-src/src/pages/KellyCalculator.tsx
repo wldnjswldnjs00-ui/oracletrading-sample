@@ -66,7 +66,9 @@ export default function KellyCalculator() {
     const perTrade = fraction > 0
       ? Math.pow(1 + fraction * b, p) * Math.pow(Math.max(1 - fraction, 0.0001), q)
       : 1;
-    return Math.round(startingCapital * Math.pow(perTrade, simulatorTrades));
+    const result = startingCapital * Math.pow(perTrade, simulatorTrades);
+    if (!isFinite(result) || isNaN(result)) return null;
+    return Math.round(result);
   }, [kellyValue, winRate, profitRatio, lossRatio, startingCapital, simulatorTrades]);
 
   const chartData = useMemo(() => {
@@ -82,11 +84,12 @@ export default function KellyCalculator() {
     const data = [];
     for (let i = 0; i * step <= simulatorTrades; i++) {
       const tradeNum = Math.min(i * step, simulatorTrades);
-      const capital = Math.round(startingCapital * Math.pow(perTrade, tradeNum));
+      const raw = startingCapital * Math.pow(perTrade, tradeNum);
+      const capital = isFinite(raw) ? Math.round(raw) : null;
       const label = tradeNum >= 1000000 ? `${(tradeNum / 1000000).toFixed(1)}M`
         : tradeNum >= 1000 ? `${(tradeNum / 1000).toFixed(0)}k`
         : `${tradeNum}`;
-      data.push({ trade: label, capital });
+      if (capital !== null) data.push({ trade: label, capital });
     }
     return data;
   }, [kellyValue, winRate, profitRatio, lossRatio, startingCapital, simulatorTrades]);
@@ -214,11 +217,14 @@ export default function KellyCalculator() {
               </div>
             </div>
 
-            {/* Kelly=0% Warning */}
-            {kellyValue === 0 && (
+            {/* Kelly warning */}
+            {kellyValue < 1 && (
               <div style={{ padding: 20, borderRadius: 12, background: 'color-mix(in oklab, var(--destructive, #ef4444) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--destructive, #ef4444) 30%, transparent)' }}>
                 <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.7 }}>
-                  <strong className="text-foreground">⚠️ Kelly Criterion = 0%</strong><span> — The current win rate / profit ratio combination yields a negative or zero expected edge. The formula recommends </span><strong className="text-foreground">no position</strong><span>. To generate a positive Kelly value, your win rate and profit ratio must satisfy: </span><strong className="text-foreground">Win Rate × (Profit / Loss) &gt; Loss Rate</strong><span>. Try increasing your win rate or profit ratio.</span>
+                  {kellyValue === 0
+                    ? <><strong className="text-foreground">⚠️ Kelly Criterion = 0%</strong><span> — No positive edge detected. The formula recommends </span><strong className="text-foreground">no position</strong><span>. Increase your win rate or profit ratio so that: </span><strong className="text-foreground">Win Rate × (Profit / Loss) &gt; Loss Rate</strong></>
+                    : <><strong className="text-foreground">⚠️ Kelly Criterion &lt; 1% ({kellyValue.toFixed(2)}%)</strong><span> — Your edge is very small. Consider whether transaction costs and slippage would eliminate this edge before trading.</span></>
+                  }
                 </p>
               </div>
             )}
@@ -232,7 +238,7 @@ export default function KellyCalculator() {
                 </h3>
                 <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                   <span className="text-muted-foreground"><span>Starting: </span><span className="text-gold font-mono notranslate">{startingCapital.toLocaleString()}</span></span>
-                  <span className="text-muted-foreground"><span>Projected: </span><span className="text-gold font-mono notranslate">{isFinite(projectedFinalCapital) ? projectedFinalCapital.toLocaleString() : '∞'}</span></span>
+                  <span className="text-muted-foreground"><span>Projected: </span><span className="text-gold font-mono notranslate">{projectedFinalCapital != null ? projectedFinalCapital.toLocaleString() : 'Too large to display'}</span></span>
                 </div>
               </div>
               <p className="text-muted-foreground" style={{ fontSize: 12, marginBottom: 20 }}>
