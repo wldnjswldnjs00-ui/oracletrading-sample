@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { ChartColumn, GitBranch, Crown, ChevronRight } from 'lucide-react';
+import CandleChart from '../components/CandleChart';
 
 const tools = [
   {
@@ -79,37 +80,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
-        <div style={{ maxWidth: 720 }}>
-          <p className="text-gold" style={{ fontSize: 13, fontWeight: 600, marginBottom: 16 }}>✨ Completely Free Platform</p>
-          <h1 className="text-foreground" style={{ fontSize: 56, fontWeight: 800, lineHeight: 1.15, marginBottom: 24, fontFamily: 'Playfair Display, serif' }}>
-            <span>Master Your </span><span className="text-gold">Investment</span><span> Strategy</span>
-          </h1>
-          <p className="text-muted-foreground" style={{ fontSize: 18, lineHeight: 1.7, marginBottom: 32 }}>
-            Precision tools for calculating compound growth, optimal position sizing, and advanced trading strategies.
-            Combine Kelly Criterion, Martingale pyramiding, and compound interest to maximize returns while managing risk.
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'var(--gold)', fontSize: 16 }}>👥</span>
-              <span className="text-foreground notranslate" style={{ fontSize: 15, fontWeight: 700 }}>50,000+</span>
-              <span className="text-muted-foreground" style={{ fontSize: 14 }}>skilled traders worldwide</span>
-            </div>
-            <span className="text-muted-foreground" style={{ fontSize: 14, opacity: 0.4 }}>·</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: 'var(--gold)', fontSize: 16 }}>✓</span>
-              <span className="text-muted-foreground" style={{ fontSize: 14, fontWeight: 600 }}>100% Free</span>
-            </div>
-            <span className="text-muted-foreground" style={{ fontSize: 14, opacity: 0.4 }}>·</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: 'var(--gold)', fontSize: 16 }}>✓</span>
-              <span className="text-muted-foreground" style={{ fontSize: 14, fontWeight: 600 }}>No signup required</span>
-            </div>
-          </div>
-          <div className="divider-gold" />
-        </div>
-      </section>
+      {/* Hero - 3D Candle Chart */}
+      <CandleChart />
 
       {/* Ad 1 */}
       <AdBanner slot="2000000001" />
