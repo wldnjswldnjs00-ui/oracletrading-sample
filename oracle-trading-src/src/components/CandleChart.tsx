@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 declare const THREE: any;
 
 const TOTAL    = 12;
-const SPACING  = 2.5;   // wider spacing → fills canvas width
+const SPACING  = 2.2;   // fits all 12 candles within horizontal FOV at dist=18
 const INTERVAL = 30000;
 
 export default function CandleChart() {
@@ -62,18 +62,18 @@ export default function CandleChart() {
       let close: number, high: number, low: number;
 
       if (isLast) {
-        // 장대 양봉 피날레
-        close = open + (5.5 + Math.random() * 1.0);
-        high  = close + Math.random() * 0.4;
-        low   = Math.max(0.05, open - Math.random() * 0.15);
-      } else if (isPre1) {
-        close = open + (1.5 + Math.random() * 0.6);
+        // 장대 양봉 피날레 — 3~4 units tall (clearly biggest but fits in view)
+        close = open + (2.8 + Math.random() * 0.8);
         high  = close + Math.random() * 0.25;
         low   = Math.max(0.05, open - Math.random() * 0.12);
-      } else if (isPre2) {
-        close = open + (0.8 + Math.random() * 0.4);
+      } else if (isPre1) {
+        close = open + (0.9 + Math.random() * 0.4);
         high  = close + Math.random() * 0.18;
         low   = Math.max(0.05, open - Math.random() * 0.1);
+      } else if (isPre2) {
+        close = open + (0.5 + Math.random() * 0.3);
+        high  = close + Math.random() * 0.12;
+        low   = Math.max(0.05, open - Math.random() * 0.08);
       } else {
         const bull = Math.random() > 0.42;
         if (bull) {
@@ -193,9 +193,9 @@ export default function CandleChart() {
       rotY += (targetRotY - rotY) * 0.1;
       rotX += (targetRotX - rotX) * 0.1;
 
-      // Camera smoothly tracks price growth upward
-      const targetLookY = Math.max(3, lastClose * 0.55);
-      lookAt.y += (targetLookY - lookAt.y) * 0.015;
+      // Camera tracks price growth — faster so tall candles don't get clipped
+      const targetLookY = Math.max(3, lastClose * 0.45);
+      lookAt.y += (targetLookY - lookAt.y) * 0.05;
 
       camera.position.x = dist * Math.cos(rotX) * Math.sin(rotY);
       camera.position.z = dist * Math.cos(rotX) * Math.cos(rotY);
