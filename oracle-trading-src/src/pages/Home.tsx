@@ -177,7 +177,7 @@ export default function Home() {
       <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
         <div style={{ maxWidth: 720, marginBottom: 48 }}>
           <h2 className="text-foreground" style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, fontFamily: 'Playfair Display, serif' }}>Why Oracle Trading?</h2>
-          <p className="text-muted-foreground" style={{ fontSize: 17 }}>Professional-grade calculation tools designed for serious investors and traders.</p>
+          <p className="text-muted-foreground" style={{ fontSize: 17 }}>Professional-grade calculation tools designed for every investor and trader.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 32 }}>
           {features.map((f, i) => (
