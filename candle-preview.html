@@ -242,7 +242,7 @@ scene.background = new THREE.Color(0x000000);
 // Camera — 정면에서 바라보는 각도
 const camera = new THREE.PerspectiveCamera(45, W() / H(), 0.1, 200);
 camera.position.set(0, 1.5, 18);
-camera.lookAt(0, 0, 0);
+camera.lookAt(0, 1.8, 0);
 
 // 조명
 scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -404,7 +404,7 @@ function animate() {
   camera.position.x = Math.sin(rotY) * dist;
   camera.position.z = Math.cos(rotY) * dist;
   camera.position.y = 1.5 + rotX * 6;
-  camera.lookAt(0, 0, 0);
+  camera.lookAt(0, 1.8, 0);
 
   // 등장 애니메이션
   candles.forEach(grp => {
