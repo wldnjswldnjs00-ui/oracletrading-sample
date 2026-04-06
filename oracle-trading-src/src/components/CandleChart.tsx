@@ -243,7 +243,7 @@ export default function CandleChart() {
           Master Your <span style={{ color: '#D4AF37' }}>Investment</span> Strategy
         </h1>
         <p style={{
-          fontSize: 'clamp(11px, 1.5vw, 13px)', color: 'rgba(255,255,255,0.4)',
+          fontSize: 'clamp(11px, 1.5vw, 13px)', color: 'rgba(255,255,255,0.65)',
           letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 20,
         }}>
           Professional tools for every trader
@@ -257,17 +257,17 @@ export default function CandleChart() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ color: '#D4AF37', fontSize: 15 }}>👥</span>
             <span className="notranslate" style={{ color: 'white', fontSize: 14, fontWeight: 700 }}>50,000+</span>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>users worldwide</span>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>users worldwide</span>
           </div>
-          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>·</span>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>·</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>100% Free</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 600 }}>100% Free</span>
           </div>
-          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>·</span>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>·</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>No signup required</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 600 }}>No signup required</span>
           </div>
         </div>
       </div>
