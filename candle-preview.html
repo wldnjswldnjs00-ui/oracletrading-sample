@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oracle Trading - Candle Animation Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0800;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .hero {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 48px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 8px;
+    font-family: Georgia, serif;
+  }
+  h1 span { color: #D4AF37; }
+
+  .subtitle {
+    font-size: 16px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 48px;
+    letter-spacing: 1px;
+  }
+
+  .chart-container {
+    width: 100%;
+    background: linear-gradient(180deg, rgba(212,175,55,0.03) 0%, rgba(0,0,0,0) 100%);
+    border: 1px solid rgba(212,175,55,0.15);
+    border-radius: 16px;
+    padding: 32px 24px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .chart-label {
+    font-size: 13px;
+    color: rgba(212,175,55,0.6);
+    letter-spacing: 1px;
+  }
+  .chart-status {
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+  }
+  .chart-status span {
+    color: #4caf7d;
+    font-weight: 600;
+  }
+
+  canvas {
+    width: 100%;
+    height: 280px;
+    display: block;
+  }
+
+  .progress-bar-wrap {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    white-space: nowrap;
+  }
+  .progress-bg {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+  }
+  .progress-fill {
+    height: 3px;
+    background: linear-gradient(90deg, #D4AF37, #F5D06A);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+  .candle-count {
+    font-size: 11px;
+    color: rgba(212,175,55,0.5);
+    white-space: nowrap;
+  }
+
+  .final-message {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #D4AF37;
+    opacity: 0;
+    transition: opacity 1s ease;
+    letter-spacing: 1px;
+  }
+  .final-message.show { opacity: 1; }
+
+  /* speed control for preview */
+  .controls {
+    margin-top: 32px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .ctrl-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(212,175,55,0.3);
+    background: rgba(212,175,55,0.08);
+    color: #D4AF37;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .ctrl-btn:hover { background: rgba(212,175,55,0.15); }
+  .ctrl-btn.active {
+    background: #D4AF37;
+    color: #000;
+    border-color: #D4AF37;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Oracle <span>Trading</span></h1>
+  <p class="subtitle">Investment Strategy Calculator</p>
+
+  <div class="chart-container">
+    <div class="chart-header">
+      <span class="chart-label">BTC/USDT · 5M</span>
+      <span class="chart-status">LIVE <span>●</span></span>
+    </div>
+    <canvas id="candleCanvas"></canvas>
+    <div class="progress-bar-wrap">
+      <span class="progress-label">Next signal</span>
+      <div class="progress-bg">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="candle-count" id="candleCount">0 / 12</span>
+    </div>
+  </div>
+
+  <div class="final-message" id="finalMsg">🚀 Strong Buy Signal Detected</div>
+
+  <div class="controls">
+    <button class="ctrl-btn" onclick="setSpeed(300)">Fast (Preview)</button>
+    <button class="ctrl-btn active" onclick="setSpeed(3000)">Normal</button>
+    <button class="ctrl-btn" onclick="resetChart()">Reset</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('candleCanvas');
+const ctx = canvas.getContext('2d');
+
+const TOTAL_CANDLES = 12;
+const CANDLE_INTERVAL_REAL = 5 * 60 * 1000; // 5분 (실제)
+let CANDLE_INTERVAL = 3000; // 미리보기 속도
+
+let candles = [];
+let currentCandle = 0;
+let timer = null;
+let progressTimer = null;
+let progressStart = null;
+
+// 캔들 생성 로직
+function generateCandle(index) {
+  const isLast = index === TOTAL_CANDLES - 1;
+  const isPreLast = index === TOTAL_CANDLES - 2;
+
+  let open, close, high, low;
+  const prev = candles.length > 0 ? candles[candles.length - 1].close : 42000;
+
+  if (isLast) {
+    // 장대양봉 피니쉬
+    open = prev;
+    close = prev * (1 + (0.04 + Math.random() * 0.03));
+    high = close * (1 + Math.random() * 0.005);
+    low = open * (1 - Math.random() * 0.003);
+  } else if (isPreLast) {
+    // 큰 양봉
+    open = prev;
+    close = prev * (1 + (0.015 + Math.random() * 0.015));
+    high = close * (1 + Math.random() * 0.005);
+    low = open * (1 - Math.random() * 0.003);
+  } else {
+    // 음봉 작게 or 양봉 중간
+    const isBull = Math.random() > 0.4;
+    if (isBull) {
+      open = prev;
+      close = prev * (1 + (0.003 + Math.random() * 0.008));
+      high = close * (1 + Math.random() * 0.004);
+      low = open * (1 - Math.random() * 0.003);
+    } else {
+      open = prev;
+      close = prev * (1 - (0.001 + Math.random() * 0.004));
+      high = open * (1 + Math.random() * 0.003);
+      low = close * (1 - Math.random() * 0.003);
+    }
+  }
+
+  return { open, close, high, low, index, isBull: close >= open };
+}
+
+function drawChart() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const W = rect.width - 48;
+  const H = 280;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (candles.length === 0) {
+    ctx.fillStyle = 'rgba(212,175,55,0.1)';
+    ctx.font = '13px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Waiting for first candle...', W/2, H/2);
+    return;
+  }
+
+  // 가격 범위
+  const allPrices = candles.flatMap(c => [c.high, c.low]);
+  const minP = Math.min(...allPrices);
+  const maxP = Math.max(...allPrices);
+  const padding = (maxP - minP) * 0.15;
+  const pMin = minP - padding;
+  const pMax = maxP + padding;
+
+  const toY = p => H - ((p - pMin) / (pMax - pMin)) * (H - 40) - 20;
+
+  const slotW = W / TOTAL_CANDLES;
+  const candleW = slotW * 0.5;
+
+  // 그리드 라인
+  for (let i = 0; i < 4; i++) {
+    const y = 20 + (H - 40) * i / 3;
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  candles.forEach((c, i) => {
+    const x = slotW * i + slotW / 2;
+    const isLast = i === candles.length - 1;
+    const bullColor = isLast && i === TOTAL_CANDLES - 1 ? '#F5D06A' : '#4caf7d';
+    const bearColor = '#e05c5c';
+    const color = c.isBull ? bullColor : bearColor;
+
+    // 심지
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(x, toY(c.high));
+    ctx.lineTo(x, toY(c.low));
+    ctx.stroke();
+
+    // 몸통
+    const bodyTop = toY(Math.max(c.open, c.close));
+    const bodyBot = toY(Math.min(c.open, c.close));
+    const bodyH = Math.max(2, bodyBot - bodyTop);
+
+    // 마지막 장대양봉 글로우
+    if (i === TOTAL_CANDLES - 1 && c.isBull) {
+      ctx.shadowColor = '#D4AF37';
+      ctx.shadowBlur = 16;
+    }
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x - candleW/2, bodyTop, candleW, bodyH);
+    ctx.shadowBlur = 0;
+
+    // 현재 캔들 깜빡이 효과
+    if (isLast) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - candleW/2 - 2, bodyTop - 2, candleW + 4, bodyH + 4);
+    }
+  });
+}
+
+function addCandle() {
+  if (currentCandle >= TOTAL_CANDLES) return;
+
+  const c = generateCandle(currentCandle);
+  candles.push(c);
+  currentCandle++;
+
+  drawChart();
+
+  document.getElementById('candleCount').textContent = `${currentCandle} / ${TOTAL_CANDLES}`;
+  document.getElementById('progressFill').style.width = `${(currentCandle / TOTAL_CANDLES) * 100}%`;
+
+  if (currentCandle === TOTAL_CANDLES) {
+    document.getElementById('finalMsg').classList.add('show');
+    clearInterval(progressTimer);
+  } else {
+    startProgressBar();
+    timer = setTimeout(addCandle, CANDLE_INTERVAL);
+  }
+}
+
+function startProgressBar() {
+  progressStart = Date.now();
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    const elapsed = Date.now() - progressStart;
+    const pct = Math.min(100, (elapsed / CANDLE_INTERVAL) * 100);
+  }, 50);
+}
+
+function setSpeed(ms) {
+  CANDLE_INTERVAL = ms;
+  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  resetChart();
+}
+
+function resetChart() {
+  clearTimeout(timer);
+  clearInterval(progressTimer);
+  candles = [];
+  currentCandle = 0;
+  document.getElementById('candleCount').textContent = '0 / 12';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('finalMsg').classList.remove('show');
+  drawChart();
+  setTimeout(() => {
+    addCandle();
+    startProgressBar();
+    timer = setTimeout(addCandle, CANDLE_INTERVAL);
+  }, 500);
+}
+
+// 시작
+window.addEventListener('resize', drawChart);
+setTimeout(() => {
+  addCandle();
+  timer = setTimeout(function next() {
+    addCandle();
+    if (currentCandle < TOTAL_CANDLES) timer = setTimeout(next, CANDLE_INTERVAL);
+  }, CANDLE_INTERVAL);
+}, 800);
+</script>
+</body>
+</html>
