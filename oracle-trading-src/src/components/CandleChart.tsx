@@ -221,7 +221,7 @@ export default function CandleChart() {
   return (
     <section
       aria-label="3D candlestick chart animation"
-      style={{ width: '100%', height: isMobile ? '70vh' : '100vh', position: 'relative', overflow: 'hidden' }}
+      style={{ width: '100%', height: isMobile ? '55vh' : '75vh', position: 'relative', overflow: 'hidden' }}
     >
       <canvas
         ref={canvasRef}
