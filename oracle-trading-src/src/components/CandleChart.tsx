@@ -221,7 +221,7 @@ export default function CandleChart() {
   return (
     <section
       aria-label="3D candlestick chart animation"
-      style={{ width: '100%', height: isMobile ? '60vh' : '100vh', position: 'relative', overflow: 'hidden' }}
+      style={{ width: '100%', height: isMobile ? '70vh' : '100vh', position: 'relative', overflow: 'hidden' }}
     >
       <canvas
         ref={canvasRef}
@@ -230,7 +230,7 @@ export default function CandleChart() {
 
       {/* Hero text + stats overlay */}
       <div style={{
-        position: 'absolute', bottom: 60, left: '50%',
+        position: 'absolute', bottom: isMobile ? 16 : 60, left: '50%',
         transform: 'translateX(-50%)',
         textAlign: 'center', pointerEvents: 'none', width: '100%',
         padding: '0 24px',
