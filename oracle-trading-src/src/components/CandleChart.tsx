@@ -4,7 +4,7 @@ declare const THREE: any;
 
 const TOTAL    = 12;
 const SPACING  = 1.6;
-const INTERVAL = 60000; // 1 candle per minute (real-time)
+const INTERVAL = 30000; // 1 candle per 30 seconds
 
 export default function CandleChart() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
