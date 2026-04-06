@@ -86,7 +86,7 @@ export default function Home() {
       <CandleChart />
 
       {/* Hero Text */}
-      <div style={{ textAlign: 'center', padding: '40px 24px 48px', background: '#000' }}>
+      <div style={{ textAlign: 'center', padding: '8px 24px 48px', background: '#000' }}>
         <h1 style={{
           fontSize: 'clamp(28px, 5vw, 64px)', fontWeight: 800,
           color: 'white', fontFamily: 'Playfair Display, Georgia, serif',
