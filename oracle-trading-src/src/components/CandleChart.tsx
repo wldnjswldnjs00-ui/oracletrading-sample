@@ -39,11 +39,12 @@ export default function CandleChart() {
     scene.background = new THREE.Color(0x000000);
 
     // Camera
-    const fov  = mobile ? 55 : 45;
-    const dist = mobile ? 22 : 18;
+    const fov  = mobile ? 65 : 45;
+    const dist = mobile ? 20 : 18;
+    const camY = mobile ? 1 : 2;
     const camera = new THREE.PerspectiveCamera(fov, canvas.offsetWidth / canvas.offsetHeight, 0.1, 200);
-    camera.position.set(0, 2, dist);
-    camera.lookAt(0, 1.5, 0);
+    camera.position.set(0, camY, dist);
+    camera.lookAt(0, camY, 0);
 
     // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -178,7 +179,7 @@ export default function CandleChart() {
 
     // Render loop — spherical orbit
     let rafId: number;
-    const lookAt = new THREE.Vector3(0, 1.5, 0);
+    const lookAt = new THREE.Vector3(0, camY, 0);
     function animate() {
       rafId = requestAnimationFrame(animate);
       rotY += (targetRotY - rotY) * 0.1;
@@ -187,7 +188,7 @@ export default function CandleChart() {
       // Spherical coordinates for full 360° orbit
       camera.position.x = dist * Math.cos(rotX) * Math.sin(rotY);
       camera.position.z = dist * Math.cos(rotX) * Math.cos(rotY);
-      camera.position.y = dist * Math.sin(rotX) + 2;
+      camera.position.y = dist * Math.sin(rotX) + camY;
       camera.lookAt(lookAt);
 
       candles.forEach(grp => {
