@@ -1,71 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="42%" r="65%">
-      <stop offset="0%" stop-color="#1c1400"/>
-      <stop offset="100%" stop-color="#060400"/>
-    </radialGradient>
-    <linearGradient id="goldV" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#F5D06A"/>
-      <stop offset="100%" stop-color="#A07010"/>
-    </linearGradient>
-    <linearGradient id="goldH" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#D4AF37"/>
-      <stop offset="100%" stop-color="#F5D06A"/>
-    </linearGradient>
-  </defs>
+  <!-- Pure black background -->
+  <rect width="1200" height="630" fill="#000000"/>
 
-  <!-- Background -->
-  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Ascending bars — white, solid, no gradient -->
+  <rect x="495" y="247" width="42" height="48"  rx="4" fill="white" opacity="0.35"/>
+  <rect x="551" y="207" width="42" height="88"  rx="4" fill="white" opacity="0.55"/>
+  <rect x="607" y="157" width="42" height="138" rx="4" fill="white" opacity="0.78"/>
+  <rect x="663" y="97"  width="42" height="198" rx="4" fill="white"/>
 
-  <!-- Subtle center glow -->
-  <radialGradient id="glow" cx="50%" cy="38%" r="40%">
-    <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.07"/>
-    <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
-  </radialGradient>
-  <rect width="1200" height="630" fill="url(#glow)"/>
-
-  <!-- ── BAR CHART MARK — centered, top area ── -->
-  <!-- 4 ascending bars, base at y=295, centered at x=600 -->
-  <!-- bar widths=42, gap=14, total=4*42+3*14=168+42=210, start x=495 -->
-  <rect x="495" y="247" width="42" height="48"  rx="5" fill="#D4AF37" opacity="0.50"/>
-  <rect x="551" y="215" width="42" height="80"  rx="5" fill="#D4AF37" opacity="0.65"/>
-  <rect x="607" y="175" width="42" height="120" rx="5" fill="#D4AF37" opacity="0.82"/>
-  <rect x="663" y="127" width="42" height="168" rx="5" fill="url(#goldV)"/>
-
-  <!-- Trend line connecting bar tops -->
+  <!-- Trend line -->
   <polyline
-    points="516,247 572,215 628,175 684,127"
-    fill="none"
-    stroke="#F5D06A"
-    stroke-width="3.5"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    opacity="0.85"/>
+    points="516,247 572,207 628,157 684,97"
+    fill="none" stroke="white" stroke-width="3"
+    stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
 
-  <!-- Dots on trend line -->
-  <circle cx="516" cy="247" r="5" fill="#D4AF37" opacity="0.7"/>
-  <circle cx="572" cy="215" r="5" fill="#D4AF37" opacity="0.8"/>
-  <circle cx="628" cy="175" r="5" fill="#D4AF37" opacity="0.9"/>
-  <circle cx="684" cy="127" r="7" fill="#F5D06A"/>
-
-  <!-- ── BRAND NAME ── -->
-  <text
-    x="600" y="370"
+  <!-- Oracle Trading -->
+  <text x="600" y="368"
     text-anchor="middle"
     font-family="Georgia, 'Times New Roman', serif"
-    font-size="86"
-    font-weight="700"
-    fill="white"
-    letter-spacing="-2">Oracle Trading</text>
+    font-size="88" font-weight="700"
+    fill="white" letter-spacing="-2">Oracle Trading</text>
 
-  <!-- ── TAGLINE ── -->
-  <text
-    x="600" y="422"
+  <!-- Tagline -->
+  <text x="600" y="420"
     text-anchor="middle"
     font-family="Arial, Helvetica, sans-serif"
-    font-size="21"
-    font-weight="400"
-    fill="#D4AF37"
-    opacity="0.65"
-    letter-spacing="4">INVESTMENT STRATEGY CALCULATOR</text>
+    font-size="20" font-weight="400"
+    fill="white" opacity="0.45"
+    letter-spacing="5">INVESTMENT STRATEGY CALCULATOR</text>
 </svg>
