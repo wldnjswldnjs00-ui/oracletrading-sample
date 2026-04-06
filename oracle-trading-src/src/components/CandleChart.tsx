@@ -225,7 +225,11 @@ export default function CandleChart() {
     >
       <canvas
         ref={canvasRef}
-        style={{ width: '100%', height: '100%', display: 'block', cursor: 'grab' }}
+        style={{
+          width: '100%', height: isMobile ? '85vh' : '100vh',
+          display: 'block', cursor: 'grab',
+          position: 'absolute', bottom: 0, left: 0,
+        }}
       />
 
       {/* Hero text + stats overlay */}
