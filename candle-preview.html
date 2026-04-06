@@ -1,376 +1,492 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oracle Trading - Candle Animation Preview</title>
+<title>Oracle Trading - Sample Preview</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0800;
+    --gold: #D4AF37;
+    --card: #130f00;
+    --border: rgba(212,175,55,0.15);
+    --muted: rgba(255,255,255,0.4);
+  }
+
   body {
-    background: #0d0800;
+    background: var(--bg);
     color: #e0e0e0;
     font-family: 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
+    overflow-x: hidden;
   }
 
-  .hero {
-    width: 100%;
-    max-width: 900px;
-    text-align: center;
+  /* ── HEADER ── */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(13,8,0,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
   }
-
-  h1 {
-    font-size: 48px;
-    font-weight: 800;
-    color: white;
-    margin-bottom: 8px;
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-badge {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: rgba(212,175,55,0.12);
+    border: 1px solid rgba(212,175,55,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: var(--gold);
     font-family: Georgia, serif;
   }
-  h1 span { color: #D4AF37; }
+  .logo-text { line-height: 1.2; }
+  .logo-name { font-size: 15px; font-weight: 700; color: white; font-family: Georgia, serif; }
+  .logo-sub { font-size: 10px; color: var(--muted); }
 
-  .subtitle {
-    font-size: 16px;
-    color: rgba(255,255,255,0.4);
-    margin-bottom: 48px;
-    letter-spacing: 1px;
-  }
-
-  .chart-container {
+  /* ── HERO / CHART ── */
+  #chart-section {
     width: 100%;
-    background: linear-gradient(180deg, rgba(212,175,55,0.03) 0%, rgba(0,0,0,0) 100%);
-    border: 1px solid rgba(212,175,55,0.15);
-    border-radius: 16px;
-    padding: 32px 24px 16px;
+    height: 100vh;
     position: relative;
     overflow: hidden;
   }
-
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-  .chart-label {
-    font-size: 13px;
-    color: rgba(212,175,55,0.6);
-    letter-spacing: 1px;
-  }
-  .chart-status {
-    font-size: 12px;
-    color: rgba(255,255,255,0.3);
-  }
-  .chart-status span {
-    color: #4caf7d;
-    font-weight: 600;
-  }
-
-  canvas {
-    width: 100%;
-    height: 280px;
+  #three-canvas {
+    width: 100% !important;
+    height: 100% !important;
     display: block;
+    cursor: grab;
+  }
+  #three-canvas:active { cursor: grabbing; }
+
+  .hero-overlay {
+    position: absolute;
+    bottom: 60px; left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .hero-title {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    color: white;
+    font-family: Georgia, serif;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .hero-title span { color: var(--gold); }
+  .hero-sub {
+    font-size: clamp(13px, 1.5vw, 16px);
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
   }
 
-  .progress-bar-wrap {
-    margin-top: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .progress-label {
-    font-size: 11px;
-    color: rgba(255,255,255,0.3);
-    white-space: nowrap;
-  }
-  .progress-bg {
-    flex: 1;
-    height: 3px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 2px;
-  }
-  .progress-fill {
-    height: 3px;
-    background: linear-gradient(90deg, #D4AF37, #F5D06A);
-    border-radius: 2px;
-    transition: width 0.5s ease;
-    width: 0%;
-  }
-  .candle-count {
-    font-size: 11px;
-    color: rgba(212,175,55,0.5);
-    white-space: nowrap;
+  /* fade bottom */
+  #chart-section::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 120px;
+    background: linear-gradient(transparent, var(--bg));
+    pointer-events: none;
   }
 
-  .final-message {
-    margin-top: 20px;
-    font-size: 18px;
-    font-weight: 700;
-    color: #D4AF37;
-    opacity: 0;
-    transition: opacity 1s ease;
-    letter-spacing: 1px;
+  /* ── TOOLS ── */
+  .section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 80px 24px;
   }
-  .final-message.show { opacity: 1; }
+  .section-title {
+    font-size: 28px; font-weight: 700;
+    color: white; font-family: Georgia, serif;
+    margin-bottom: 8px;
+  }
+  .section-sub {
+    font-size: 14px; color: var(--muted);
+    margin-bottom: 40px;
+  }
 
-  /* speed control for preview */
-  .controls {
-    margin-top: 32px;
-    display: flex;
-    gap: 12px;
-    justify-content: center;
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
   }
-  .ctrl-btn {
-    padding: 8px 20px;
-    border-radius: 8px;
-    border: 1px solid rgba(212,175,55,0.3);
-    background: rgba(212,175,55,0.08);
-    color: #D4AF37;
-    font-size: 12px;
+  .tool-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
     cursor: pointer;
-    font-weight: 600;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
   }
-  .ctrl-btn:hover { background: rgba(212,175,55,0.15); }
-  .ctrl-btn.active {
-    background: #D4AF37;
-    color: #000;
-    border-color: #D4AF37;
+  .tool-card:hover {
+    border-color: rgba(212,175,55,0.4);
+    transform: translateY(-2px);
+  }
+  .tool-card.vip { border-color: rgba(212,175,55,0.3); }
+  .vip-badge {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(212,175,55,0.12);
+    border: 1px solid rgba(212,175,55,0.3);
+    color: var(--gold); font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 20px;
+  }
+  .tool-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: rgba(212,175,55,0.1);
+    border: 1px solid rgba(212,175,55,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 16px;
+  }
+  .tool-name { font-size: 17px; font-weight: 700; color: white; margin-bottom: 8px; }
+  .tool-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+  .tool-link { font-size: 13px; color: var(--gold); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+  /* ── WHY ── */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .why-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .why-title { font-size: 15px; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
+  .why-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    text-align: center;
+  }
+  footer p { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  footer a { color: var(--gold); text-decoration: none; opacity: 0.8; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    margin: 0;
   }
 </style>
 </head>
 <body>
 
-<div class="hero">
-  <h1>Oracle <span>Trading</span></h1>
-  <p class="subtitle">Investment Strategy Calculator</p>
-
-  <div class="chart-container">
-    <div class="chart-header">
-      <span class="chart-label">BTC/USDT · 5M</span>
-      <span class="chart-status">LIVE <span>●</span></span>
-    </div>
-    <canvas id="candleCanvas"></canvas>
-    <div class="progress-bar-wrap">
-      <span class="progress-label">Next signal</span>
-      <div class="progress-bg">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      <span class="candle-count" id="candleCount">0 / 12</span>
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-badge">OT</div>
+    <div class="logo-text">
+      <div class="logo-name">Oracle Trading</div>
+      <div class="logo-sub">Investment Strategy Calculator</div>
     </div>
   </div>
+</header>
 
-  <div class="final-message" id="finalMsg">🚀 Strong Buy Signal Detected</div>
+<!-- 3D CANDLE CHART HERO -->
+<section id="chart-section">
+  <canvas id="three-canvas"></canvas>
+  <div class="hero-overlay">
+    <div class="hero-title">Master Your<br><span>Investment</span> Strategy</div>
+    <div class="hero-sub">Professional tools for serious traders</div>
+  </div>
+</section>
 
-  <div class="controls">
-    <button class="ctrl-btn" onclick="setSpeed(300)">Fast (Preview)</button>
-    <button class="ctrl-btn active" onclick="setSpeed(3000)">Normal</button>
-    <button class="ctrl-btn" onclick="resetChart()">Reset</button>
+<!-- TOOLS -->
+<div class="divider"></div>
+<div class="section">
+  <div class="section-title">Investment Tools</div>
+  <div class="section-sub">Professional-grade calculators for every strategy</div>
+  <div class="tools-grid">
+    <div class="tool-card">
+      <div class="tool-icon">📈</div>
+      <div class="tool-name">Compound Interest Calculator</div>
+      <div class="tool-desc">See how your investment grows exponentially through compound interest over time.</div>
+      <div class="tool-link">Explore →</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-icon">📊</div>
+      <div class="tool-name">Kelly Criterion Calculator</div>
+      <div class="tool-desc">Determine optimal position sizing based on your win rate and risk-reward ratio.</div>
+      <div class="tool-link">Explore →</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-icon">🔀</div>
+      <div class="tool-name">Martingale Simulator</div>
+      <div class="tool-desc">Simulate pyramid entry strategy with custom drawdown levels and position scaling.</div>
+      <div class="tool-link">Explore →</div>
+    </div>
+    <div class="tool-card vip">
+      <div class="vip-badge">VIP</div>
+      <div class="tool-icon">👑</div>
+      <div class="tool-name">VIP Strategy</div>
+      <div class="tool-desc">Integrated solution combining Kelly, Martingale, and compound interest for optimal returns.</div>
+      <div class="tool-link">Explore →</div>
+    </div>
   </div>
 </div>
 
-<script>
-const canvas = document.getElementById('candleCanvas');
-const ctx = canvas.getContext('2d');
+<!-- WHY -->
+<div class="divider"></div>
+<div class="section">
+  <div class="section-title">Why Oracle Trading?</div>
+  <div class="section-sub">Professional-grade calculation tools designed for serious investors and traders.</div>
+  <div class="why-grid">
+    <div class="why-card">
+      <div class="why-title">Precision Calculations</div>
+      <div class="why-desc">Advanced mathematical models for accurate financial projections and risk assessment.</div>
+    </div>
+    <div class="why-card">
+      <div class="why-title">Interactive Visualization</div>
+      <div class="why-desc">Instant charts and graphs showing growth trajectories and risk scenarios.</div>
+    </div>
+    <div class="why-card">
+      <div class="why-title">Integrated Strategy</div>
+      <div class="why-desc">Combine multiple calculation methods for comprehensive investment planning.</div>
+    </div>
+  </div>
+</div>
 
-const TOTAL_CANDLES = 12;
-const CANDLE_INTERVAL_REAL = 5 * 60 * 1000; // 5분 (실제)
-let CANDLE_INTERVAL = 3000; // 미리보기 속도
+<!-- FOOTER -->
+<footer>
+  <p>Oracle Trading © 2026. Professional Investment Strategy Calculator.</p>
+  <p>Disclaimer: For educational purposes only. Always consult with a financial advisor.</p>
+  <p style="margin-top:4px">Contact: <a href="mailto:oracletrading.help@gmail.com">oracletrading.help@gmail.com</a></p>
+  <p style="margin-top:12px"><a href="#">Privacy Policy</a></p>
+</footer>
+
+<script>
+// ── THREE.JS 3D CANDLE CHART ──
+const container = document.getElementById('chart-section');
+const canvas = document.getElementById('three-canvas');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0800);
+
+// 안개
+scene.fog = new THREE.FogExp2(0x0d0800, 0.035);
+
+const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+camera.position.set(0, 3, 14);
+camera.lookAt(0, 0, 0);
+
+// 조명
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(5, 10, 5);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+const goldLight = new THREE.PointLight(0xD4AF37, 0.4, 20);
+goldLight.position.set(0, 5, 5);
+scene.add(goldLight);
+
+// 바닥 반사 그리드
+const gridHelper = new THREE.GridHelper(30, 30, 0x1a1200, 0x1a1200);
+gridHelper.position.y = -3;
+scene.add(gridHelper);
+
+// 캔들 설정
+const TOTAL = 12;
+const SPACING = 1.8;
+const startX = -(TOTAL - 1) * SPACING / 2;
 
 let candles = [];
-let currentCandle = 0;
-let timer = null;
-let progressTimer = null;
-let progressStart = null;
+let currentIdx = 0;
+let lastPrice = 100;
 
-// 캔들 생성 로직
-function generateCandle(index) {
-  const isLast = index === TOTAL_CANDLES - 1;
-  const isPreLast = index === TOTAL_CANDLES - 2;
+// 미리보기 속도 (실제: 5 * 60 * 1000)
+const INTERVAL = 2500;
 
-  let open, close, high, low;
-  const prev = candles.length > 0 ? candles[candles.length - 1].close : 42000;
+function generateCandle(idx) {
+  const isLast = idx === TOTAL - 1;
+  const isPreLast = idx === TOTAL - 2;
+  let open = lastPrice;
+  let close, high, low;
 
   if (isLast) {
-    // 장대양봉 피니쉬
-    open = prev;
-    close = prev * (1 + (0.04 + Math.random() * 0.03));
-    high = close * (1 + Math.random() * 0.005);
-    low = open * (1 - Math.random() * 0.003);
+    close = open * (1 + 0.05 + Math.random() * 0.03);
+    high = close * (1 + Math.random() * 0.008);
+    low = open * (1 - Math.random() * 0.005);
   } else if (isPreLast) {
-    // 큰 양봉
-    open = prev;
-    close = prev * (1 + (0.015 + Math.random() * 0.015));
-    high = close * (1 + Math.random() * 0.005);
-    low = open * (1 - Math.random() * 0.003);
+    close = open * (1 + 0.02 + Math.random() * 0.015);
+    high = close * (1 + Math.random() * 0.006);
+    low = open * (1 - Math.random() * 0.004);
   } else {
-    // 음봉 작게 or 양봉 중간
-    const isBull = Math.random() > 0.4;
+    const isBull = Math.random() > 0.42;
     if (isBull) {
-      open = prev;
-      close = prev * (1 + (0.003 + Math.random() * 0.008));
-      high = close * (1 + Math.random() * 0.004);
+      close = open * (1 + 0.005 + Math.random() * 0.012);
+      high = close * (1 + Math.random() * 0.005);
       low = open * (1 - Math.random() * 0.003);
     } else {
-      open = prev;
-      close = prev * (1 - (0.001 + Math.random() * 0.004));
+      close = open * (1 - 0.002 - Math.random() * 0.006);
       high = open * (1 + Math.random() * 0.003);
       low = close * (1 - Math.random() * 0.003);
     }
   }
-
-  return { open, close, high, low, index, isBull: close >= open };
+  lastPrice = close;
+  return { open, close, high, low, isBull: close >= open };
 }
 
-function drawChart() {
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const W = rect.width - 48;
-  const H = 280;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.scale(dpr, dpr);
+function createCandleMesh(data, xPos) {
+  const group = new THREE.Group();
+  const isBull = data.isBull;
+  const isLast = candles.length === TOTAL - 1;
 
-  ctx.clearRect(0, 0, W, H);
+  // 색상
+  const bullColor = 0x16a34a;
+  const bearColor = 0xdc2626;
+  const color = isBull ? bullColor : bearColor;
 
-  if (candles.length === 0) {
-    ctx.fillStyle = 'rgba(212,175,55,0.1)';
-    ctx.font = '13px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Waiting for first candle...', W/2, H/2);
-    return;
-  }
+  const bodyH = Math.max(0.08, Math.abs(data.close - data.open) * 2.5);
+  const wickH = (data.high - data.low) * 2.5;
+  const bodyY = (Math.max(data.open, data.close) + Math.min(data.open, data.close)) / 2;
 
-  // 가격 범위
-  const allPrices = candles.flatMap(c => [c.high, c.low]);
-  const minP = Math.min(...allPrices);
-  const maxP = Math.max(...allPrices);
-  const padding = (maxP - minP) * 0.15;
-  const pMin = minP - padding;
-  const pMax = maxP + padding;
-
-  const toY = p => H - ((p - pMin) / (pMax - pMin)) * (H - 40) - 20;
-
-  const slotW = W / TOTAL_CANDLES;
-  const candleW = slotW * 0.5;
-
-  // 그리드 라인
-  for (let i = 0; i < 4; i++) {
-    const y = 20 + (H - 40) * i / 3;
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    ctx.lineWidth = 1;
-    ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
-    ctx.stroke();
-  }
-
-  candles.forEach((c, i) => {
-    const x = slotW * i + slotW / 2;
-    const isLast = i === candles.length - 1;
-    const bullColor = isLast && i === TOTAL_CANDLES - 1 ? '#F5D06A' : '#4caf7d';
-    const bearColor = '#e05c5c';
-    const color = c.isBull ? bullColor : bearColor;
-
-    // 심지
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.moveTo(x, toY(c.high));
-    ctx.lineTo(x, toY(c.low));
-    ctx.stroke();
-
-    // 몸통
-    const bodyTop = toY(Math.max(c.open, c.close));
-    const bodyBot = toY(Math.min(c.open, c.close));
-    const bodyH = Math.max(2, bodyBot - bodyTop);
-
-    // 마지막 장대양봉 글로우
-    if (i === TOTAL_CANDLES - 1 && c.isBull) {
-      ctx.shadowColor = '#D4AF37';
-      ctx.shadowBlur = 16;
-    }
-
-    ctx.fillStyle = color;
-    ctx.fillRect(x - candleW/2, bodyTop, candleW, bodyH);
-    ctx.shadowBlur = 0;
-
-    // 현재 캔들 깜빡이 효과
-    if (isLast) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x - candleW/2 - 2, bodyTop - 2, candleW + 4, bodyH + 4);
-    }
+  // 몸통 (3D 박스)
+  const bodyGeo = new THREE.BoxGeometry(0.7, bodyH, 0.7);
+  const bodyMat = new THREE.MeshPhongMaterial({
+    color,
+    shininess: 80,
+    specular: 0x444444,
   });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.castShadow = true;
+  body.position.y = (bodyY - 100) * 0.25;
+  group.add(body);
+
+  // 심지
+  const wickGeo = new THREE.CylinderGeometry(0.04, 0.04, wickH, 8);
+  const wickMat = new THREE.MeshPhongMaterial({ color, shininess: 40 });
+  const wick = new THREE.Mesh(wickGeo, wickMat);
+  wick.position.y = (bodyY - 100) * 0.25;
+  group.add(wick);
+
+  // 장대양봉 글로우 (마지막)
+  if (isLast && isBull) {
+    const glowGeo = new THREE.BoxGeometry(0.85, bodyH + 0.1, 0.85);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xD4AF37,
+      transparent: true,
+      opacity: 0.08,
+      wireframe: false,
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.y = (bodyY - 100) * 0.25;
+    group.add(glow);
+  }
+
+  group.position.x = xPos;
+  group.position.y = -3;
+
+  // 등장 애니메이션
+  group.scale.set(1, 0.01, 1);
+  group.userData = { targetScaleY: 1, appearing: true, startTime: Date.now() };
+
+  scene.add(group);
+  return group;
 }
 
 function addCandle() {
-  if (currentCandle >= TOTAL_CANDLES) return;
+  if (currentIdx >= TOTAL) return;
+  const data = generateCandle(currentIdx);
+  const xPos = startX + currentIdx * SPACING;
+  const mesh = createCandleMesh(data, xPos);
+  candles.push({ mesh, data });
+  currentIdx++;
 
-  const c = generateCandle(currentCandle);
-  candles.push(c);
-  currentCandle++;
-
-  drawChart();
-
-  document.getElementById('candleCount').textContent = `${currentCandle} / ${TOTAL_CANDLES}`;
-  document.getElementById('progressFill').style.width = `${(currentCandle / TOTAL_CANDLES) * 100}%`;
-
-  if (currentCandle === TOTAL_CANDLES) {
-    document.getElementById('finalMsg').classList.add('show');
-    clearInterval(progressTimer);
-  } else {
-    startProgressBar();
-    timer = setTimeout(addCandle, CANDLE_INTERVAL);
+  if (currentIdx < TOTAL) {
+    setTimeout(addCandle, INTERVAL);
   }
 }
 
-function startProgressBar() {
-  progressStart = Date.now();
-  if (progressTimer) clearInterval(progressTimer);
-  progressTimer = setInterval(() => {
-    const elapsed = Date.now() - progressStart;
-    const pct = Math.min(100, (elapsed / CANDLE_INTERVAL) * 100);
-  }, 50);
+// 마우스 드래그 회전
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let rotY = 0, rotX = 0.15;
+const pivot = new THREE.Group();
+scene.add(pivot);
+
+canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('mouseup', () => { isDragging = false; });
+canvas.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = (e.clientX - prevMouse.x) * 0.008;
+  const dy = (e.clientY - prevMouse.y) * 0.005;
+  rotY += dx;
+  rotX = Math.max(-0.5, Math.min(0.8, rotX + dy));
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+
+// 터치
+canvas.addEventListener('touchstart', e => {
+  isDragging = true;
+  prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+});
+canvas.addEventListener('touchend', () => { isDragging = false; });
+canvas.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  const dx = (e.touches[0].clientX - prevMouse.x) * 0.008;
+  const dy = (e.touches[0].clientY - prevMouse.y) * 0.005;
+  rotY += dx;
+  rotX = Math.max(-0.5, Math.min(0.8, rotX + dy));
+  prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+});
+
+// 리사이즈
+window.addEventListener('resize', () => {
+  camera.aspect = container.clientWidth / container.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(container.clientWidth, container.clientHeight);
+});
+
+// 애니메이션
+function animate() {
+  requestAnimationFrame(animate);
+
+  // 카메라 회전
+  const targetX = Math.cos(rotY) * 14;
+  const targetZ = Math.sin(rotY) * 14;
+  camera.position.x += (targetX - camera.position.x) * 0.08;
+  camera.position.z += (targetZ - camera.position.z) * 0.08;
+  camera.position.y += (3 + rotX * 4 - camera.position.y) * 0.08;
+  camera.lookAt(0, -1, 0);
+
+  // 캔들 등장 애니메이션
+  candles.forEach(({ mesh }) => {
+    if (mesh.userData.appearing) {
+      const elapsed = (Date.now() - mesh.userData.startTime) / 400;
+      const scale = Math.min(1, elapsed);
+      mesh.scale.y = scale;
+      if (scale >= 1) mesh.userData.appearing = false;
+    }
+  });
+
+  // 골드 라이트 부드럽게 움직임
+  goldLight.position.x = Math.sin(Date.now() * 0.0005) * 5;
+
+  renderer.render(scene, camera);
 }
 
-function setSpeed(ms) {
-  CANDLE_INTERVAL = ms;
-  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-  resetChart();
-}
-
-function resetChart() {
-  clearTimeout(timer);
-  clearInterval(progressTimer);
-  candles = [];
-  currentCandle = 0;
-  document.getElementById('candleCount').textContent = '0 / 12';
-  document.getElementById('progressFill').style.width = '0%';
-  document.getElementById('finalMsg').classList.remove('show');
-  drawChart();
-  setTimeout(() => {
-    addCandle();
-    startProgressBar();
-    timer = setTimeout(addCandle, CANDLE_INTERVAL);
-  }, 500);
-}
-
-// 시작
-window.addEventListener('resize', drawChart);
-setTimeout(() => {
-  addCandle();
-  timer = setTimeout(function next() {
-    addCandle();
-    if (currentCandle < TOTAL_CANDLES) timer = setTimeout(next, CANDLE_INTERVAL);
-  }, CANDLE_INTERVAL);
-}, 800);
+animate();
+setTimeout(addCandle, 800);
 </script>
 </body>
 </html>
