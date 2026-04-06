@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 declare const THREE: any;
 
-const TOTAL    = 20;
-const SPACING  = 1.6;
+const TOTAL    = 12;
+const SPACING  = 2.5;   // wider spacing → fills canvas width
 const INTERVAL = 30000;
 
 export default function CandleChart() {
@@ -28,68 +28,63 @@ export default function CandleChart() {
 
     const mobile = window.innerWidth < 768;
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
-    // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
-    // Camera — closer for bigger candles, FOV tuned per device
-    const fov  = mobile ? 60 : 50;
-    const dist = mobile ? 14 : 10;
-    const camY = 3;
+    // dist kept large enough so all 12 candles stay in FOV on first spawn
+    const fov  = mobile ? 60 : 45;
+    const dist = mobile ? 24 : 18;
     const camera = new THREE.PerspectiveCamera(fov, canvas.offsetWidth / canvas.offsetHeight, 0.1, 200);
-    camera.position.set(0, camY, dist);
-    camera.lookAt(0, camY, 0);
+    camera.position.set(0, 3, dist);
+    camera.lookAt(0, 3, 0);
 
-    // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const dir = new THREE.DirectionalLight(0xffffff, 0.8);
     dir.position.set(0, 10, 10);
     scene.add(dir);
-    const fill = new THREE.DirectionalLight(0xffffff, 0.3);
-    fill.position.set(-5, 3, -5);
-    scene.add(fill);
+    scene.add(Object.assign(new THREE.DirectionalLight(0xffffff, 0.3), {
+      position: new THREE.Vector3(-5, 3, -5),
+    }));
 
-    // Candles
     const candles: any[] = [];
-    let lastClose = 0.3; // start slightly above 0 so first bear can't go negative
+    let lastClose = 0.3;
     const startX = -(TOTAL - 1) * SPACING / 2;
 
     function genPrice(idx: number) {
-      const isLast  = idx === TOTAL - 1;
-      const isPre1  = idx === TOTAL - 2;
-      const isPre2  = idx === TOTAL - 3;
-      const open    = lastClose;
+      const isLast = idx === TOTAL - 1;
+      const isPre1 = idx === TOTAL - 2;
+      const isPre2 = idx === TOTAL - 3;
+      const open   = lastClose;
       let close: number, high: number, low: number;
 
       if (isLast) {
         // 장대 양봉 피날레
-        close = open + (4.5 + Math.random() * 1.0);
-        high  = close + Math.random() * 0.3;
-        low   = Math.max(0.05, open - Math.random() * 0.1);
+        close = open + (5.5 + Math.random() * 1.0);
+        high  = close + Math.random() * 0.4;
+        low   = Math.max(0.05, open - Math.random() * 0.15);
       } else if (isPre1) {
         close = open + (1.5 + Math.random() * 0.6);
-        high  = close + Math.random() * 0.2;
-        low   = Math.max(0.05, open - Math.random() * 0.1);
+        high  = close + Math.random() * 0.25;
+        low   = Math.max(0.05, open - Math.random() * 0.12);
       } else if (isPre2) {
-        close = open + (0.7 + Math.random() * 0.4);
-        high  = close + Math.random() * 0.15;
-        low   = Math.max(0.05, open - Math.random() * 0.08);
+        close = open + (0.8 + Math.random() * 0.4);
+        high  = close + Math.random() * 0.18;
+        low   = Math.max(0.05, open - Math.random() * 0.1);
       } else {
         const bull = Math.random() > 0.42;
         if (bull) {
-          close = open + (0.15 + Math.random() * 0.3);
-          high  = close + Math.random() * 0.1;
-          low   = Math.max(0.05, open - Math.random() * 0.05);
+          close = open + (0.4 + Math.random() * 0.7);
+          high  = close + Math.random() * 0.15;
+          low   = Math.max(0.05, open - Math.random() * 0.08);
         } else {
-          // 음봉: close 절대 0 아래로 안 내려감
-          close = Math.max(0.1, open - (0.06 + Math.random() * 0.18));
-          high  = open + Math.random() * 0.07;
-          low   = Math.max(0.05, close - Math.random() * 0.05);
+          // 음봉: 절대 0 아래로 안 내려감
+          close = Math.max(0.1, open - (0.15 + Math.random() * 0.35));
+          high  = open + Math.random() * 0.1;
+          low   = Math.max(0.05, close - Math.random() * 0.07);
         }
       }
 
@@ -107,30 +102,32 @@ export default function CandleChart() {
       const p     = genPrice(idx);
       const xPos  = startX + idx * SPACING;
       const color = p.bull ? 0x16a34a : 0xdc2626;
-      const bodyH = Math.max(0.08, Math.abs(p.close - p.open));
+      const bodyH = Math.max(0.1, Math.abs(p.close - p.open));
       const bodyY = (p.open + p.close) / 2;
       const grp   = new THREE.Group();
 
-      const body = new THREE.Mesh(
-        new THREE.BoxGeometry(0.7, bodyH, 0.7),
-        new THREE.MeshPhongMaterial({ color, shininess: 120, specular: 0x222222 })
-      );
-      body.position.set(0, bodyY, 0);
-      grp.add(body);
+      grp.add(Object.assign(
+        new THREE.Mesh(
+          new THREE.BoxGeometry(0.9, bodyH, 0.9),
+          new THREE.MeshPhongMaterial({ color, shininess: 120, specular: 0x222222 })
+        ),
+        { position: new THREE.Vector3(0, bodyY, 0) }
+      ));
 
       const wTopH = Math.max(0.01, p.high - Math.max(p.open, p.close));
       if (wTopH > 0.01) {
         const wick = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.06, 0.06, wTopH, 8),
+          new THREE.CylinderGeometry(0.07, 0.07, wTopH, 8),
           new THREE.MeshPhongMaterial({ color })
         );
         wick.position.set(0, Math.max(p.open, p.close) + wTopH / 2, 0);
         grp.add(wick);
       }
+
       const wBotH = Math.max(0.01, Math.min(p.open, p.close) - p.low);
       if (wBotH > 0.01) {
         const wick = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.06, 0.06, wBotH, 8),
+          new THREE.CylinderGeometry(0.07, 0.07, wBotH, 8),
           new THREE.MeshPhongMaterial({ color })
         );
         wick.position.set(0, Math.min(p.open, p.close) - wBotH / 2, 0);
@@ -151,22 +148,21 @@ export default function CandleChart() {
       spawnCandle(cidx++);
       if (cidx < TOTAL) spawnTimer = setTimeout(nextCandle, INTERVAL);
     }
-    spawnTimer = setTimeout(nextCandle, 600);
+    spawnTimer = setTimeout(nextCandle, 0);
 
-    // 360° spherical trackball rotation
     let isDrag = false, prevX = 0, prevY = 0;
     let rotY = 0, rotX = 0, targetRotY = 0, targetRotX = 0;
     const MAX_POLAR = Math.PI / 2 - 0.05;
 
-    function onPointerDown(x: number, y: number) { isDrag = true; prevX = x; prevY = y; }
-    function onPointerUp() { isDrag = false; }
-    function onPointerMove(x: number, y: number) {
+    const onPointerDown = (x: number, y: number) => { isDrag = true; prevX = x; prevY = y; };
+    const onPointerUp   = () => { isDrag = false; };
+    const onPointerMove = (x: number, y: number) => {
       if (!isDrag) return;
       targetRotY += (x - prevX) * 0.006;
       targetRotX += (y - prevY) * 0.004;
       targetRotX  = Math.max(-MAX_POLAR, Math.min(MAX_POLAR, targetRotX));
       prevX = x; prevY = y;
-    }
+    };
 
     const onMouseDown  = (e: MouseEvent) => onPointerDown(e.clientX, e.clientY);
     const onMouseUp    = () => onPointerUp();
@@ -190,17 +186,17 @@ export default function CandleChart() {
     }
     window.addEventListener('resize', onResize);
 
-    // Render loop — spherical orbit + camera tracks price growth
     let rafId: number;
-    const lookAt = new THREE.Vector3(0, camY, 0);
+    const lookAt = new THREE.Vector3(0, 3, 0);
+
     function animate() {
       rafId = requestAnimationFrame(animate);
       rotY += (targetRotY - rotY) * 0.1;
       rotX += (targetRotX - rotX) * 0.1;
 
-      // Smoothly raise camera as candles grow taller
-      const targetY = Math.max(camY, lastClose * 0.5);
-      lookAt.y += (targetY - lookAt.y) * 0.02;
+      // Camera smoothly tracks price growth upward
+      const targetLookY = Math.max(3, lastClose * 0.55);
+      lookAt.y += (targetLookY - lookAt.y) * 0.015;
 
       camera.position.x = dist * Math.cos(rotX) * Math.sin(rotY);
       camera.position.z = dist * Math.cos(rotX) * Math.cos(rotY);
