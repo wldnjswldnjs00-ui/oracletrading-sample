@@ -89,7 +89,7 @@ export default function Home() {
       <AdBanner slot="2000000001" />
 
       {/* Tool Cards */}
-      <section className="container" style={{ paddingTop: 64, paddingBottom: 64 }}>
+      <section className="container" style={{ paddingTop: 200, paddingBottom: 64 }}>
         <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 32 }}>
           {tools.map((tool, i) => (
             <div
