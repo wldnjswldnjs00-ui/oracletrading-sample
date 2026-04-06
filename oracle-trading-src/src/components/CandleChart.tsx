@@ -46,9 +46,9 @@ export default function CandleChart() {
     const dir = new THREE.DirectionalLight(0xffffff, 0.8);
     dir.position.set(0, 10, 10);
     scene.add(dir);
-    scene.add(Object.assign(new THREE.DirectionalLight(0xffffff, 0.3), {
-      position: new THREE.Vector3(-5, 3, -5),
-    }));
+    const fill = new THREE.DirectionalLight(0xffffff, 0.3);
+    fill.position.set(-5, 3, -5);
+    scene.add(fill);
 
     const candles: any[] = [];
     let lastClose = 0.3;
@@ -106,13 +106,12 @@ export default function CandleChart() {
       const bodyY = (p.open + p.close) / 2;
       const grp   = new THREE.Group();
 
-      grp.add(Object.assign(
-        new THREE.Mesh(
-          new THREE.BoxGeometry(0.9, bodyH, 0.9),
-          new THREE.MeshPhongMaterial({ color, shininess: 120, specular: 0x222222 })
-        ),
-        { position: new THREE.Vector3(0, bodyY, 0) }
-      ));
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, bodyH, 0.9),
+        new THREE.MeshPhongMaterial({ color, shininess: 120, specular: 0x222222 })
+      );
+      body.position.set(0, bodyY, 0);
+      grp.add(body);
 
       const wTopH = Math.max(0.01, p.high - Math.max(p.open, p.close));
       if (wTopH > 0.01) {
