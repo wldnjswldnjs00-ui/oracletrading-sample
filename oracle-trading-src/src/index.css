@@ -2,19 +2,34 @@
 
 @layer base {
   :root {
+    /* Hex fallbacks for older browsers (Safari < 15.4) */
     --background: #000000;
-    --foreground: oklch(95% .01 0);
+    --foreground: #f2f2f2;
     --card: #0a0a0a;
-    --primary: oklch(80% .2 50);
-    --primary-foreground: oklch(8% .01 0);
-    --secondary: oklch(18% .01 280);
-    --muted: oklch(15% .01 280);
-    --muted-foreground: oklch(70% .01 0);
-    --accent: oklch(70% .2 200);
-    --border: oklch(30% .05 280);
-    --input: oklch(15% .01 280);
-    --gold: oklch(80% .2 50);
+    --primary: #D4AF37;
+    --primary-foreground: #0d0d0d;
+    --secondary: #1a1a22;
+    --muted: #111118;
+    --muted-foreground: #a0a0a0;
+    --accent: #38bdf8;
+    --border: #2a2a35;
+    --input: #111118;
+    --gold: #D4AF37;
     --radius: 0.5rem;
+  }
+  @supports (color: oklch(80% .2 50)) {
+    :root {
+      --foreground: oklch(95% .01 0);
+      --primary: oklch(80% .2 50);
+      --primary-foreground: oklch(8% .01 0);
+      --secondary: oklch(18% .01 280);
+      --muted: oklch(15% .01 280);
+      --muted-foreground: oklch(70% .01 0);
+      --accent: oklch(70% .2 200);
+      --border: oklch(30% .05 280);
+      --input: oklch(15% .01 280);
+      --gold: oklch(80% .2 50);
+    }
   }
 }
 
@@ -102,6 +117,15 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Back button */
+.btn-back {
+  background: none; border: none; cursor: pointer;
+  padding: 8px; border-radius: 8px;
+  display: flex; align-items: center;
+  transition: background 0.15s;
+}
+.btn-back:hover { background: color-mix(in oklab, var(--primary) 10%, transparent); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

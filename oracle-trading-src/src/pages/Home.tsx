@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter';
 import { ChartColumn, GitBranch, Crown, ChevronRight } from 'lucide-react';
 import CandleChart from '../components/CandleChart';
+import { Footer } from '../components/Footer';
 
 const tools = [
   {
@@ -169,18 +170,7 @@ export default function Home() {
       {/* Ad 3 */}
       <AdBanner slot="2000000003" />
 
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid color-mix(in oklab, var(--primary) 20%, transparent)', background: 'color-mix(in oklab, var(--card) 50%, transparent)', marginTop: 48 }}>
-        <div className="container" style={{ paddingTop: 32, paddingBottom: 32, textAlign: 'center' }}>
-          <p className="text-muted-foreground" style={{ fontSize: 13 }}>Oracle Trading © 2026. Professional Investment Strategy Calculator.</p>
-          <p className="text-muted-foreground" style={{ fontSize: 12, marginTop: 8 }}>Disclaimer: For educational purposes only. Always consult with a financial advisor.</p>
-          <div style={{ marginTop: 16 }}>
-            <button onClick={() => navigate('/privacy-policy')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: 12, textDecoration: 'underline', opacity: 0.7 }}>
-              Privacy Policy
-            </button>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

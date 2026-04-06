@@ -16,7 +16,7 @@ const learnSections = [
 ];
 
 type DurationUnit = 'Day' | 'Month' | 'Year';
-const parseNum = (val: string) => { const n = parseFloat(val.replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
+const parseNum = (val: string) => { const n = parseFloat(val.replace(/[^\d.]/g, '')); return isNaN(n) ? 0 : n; };
 
 export default function CompoundCalculator() {
   const [, navigate] = useLocation();
@@ -67,9 +67,7 @@ export default function CompoundCalculator() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-primary/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container py-4 flex items-center gap-4">
-          <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 8 }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in oklab, var(--primary) 10%, transparent)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <button onClick={() => navigate('/')} className="btn-back">
             <ArrowLeft className="w-5 h-5 text-gold" />
           </button>
           <div>
@@ -135,7 +133,7 @@ export default function CompoundCalculator() {
               <div style={{ height: 400, width: '100%' }}>
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
+                    <AreaChart data={chartData} margin={{ right: 20 }}>
                       <defs>
                         <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3} />

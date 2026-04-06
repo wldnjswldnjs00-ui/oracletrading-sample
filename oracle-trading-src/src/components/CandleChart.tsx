@@ -1,19 +1,33 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 declare const THREE: any;
 
 const TOTAL    = 12;
 const SPACING  = 1.6;
-const INTERVAL = 30000; // 1 candle per 30 seconds
+const INTERVAL = 30000;
 
 export default function CandleChart() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  );
+
+  // Track mobile breakpoint on resize
+  useEffect(() => {
+    const handle = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handle);
+    return () => window.removeEventListener('resize', handle);
+  }, []);
 
   useEffect(() => {
-    if (!canvasRef.current || typeof THREE === 'undefined') return;
-
     const canvas = canvasRef.current;
-    const isMobile = window.innerWidth < 768;
+    if (!canvas) return;
+    if (typeof THREE === 'undefined') {
+      console.warn('Oracle Trading: Three.js failed to load — 3D chart disabled');
+      return;
+    }
+
+    const mobile = window.innerWidth < 768;
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -25,9 +39,10 @@ export default function CandleChart() {
     scene.background = new THREE.Color(0x000000);
 
     // Camera
-    const fov = isMobile ? 60 : 45;
+    const fov  = mobile ? 60 : 45;
+    const dist = mobile ? 22 : 18;
     const camera = new THREE.PerspectiveCamera(fov, canvas.offsetWidth / canvas.offsetHeight, 0.1, 200);
-    camera.position.set(0, 1.5, isMobile ? 22 : 18);
+    camera.position.set(0, 1.5, dist);
     camera.lookAt(0, 1.8, 0);
 
     // Lights
@@ -39,12 +54,11 @@ export default function CandleChart() {
     fill.position.set(-5, 3, -5);
     scene.add(fill);
 
-    // State
+    // Candles
     const candles: any[] = [];
     let lastClose = 0;
     const startX = -(TOTAL - 1) * SPACING / 2;
 
-    // Price generator
     function genPrice(idx: number) {
       const isLast    = idx === TOTAL - 1;
       const isPreLast = idx === TOTAL - 2;
@@ -75,37 +89,36 @@ export default function CandleChart() {
       return { open, close, high, low, bull: close >= open };
     }
 
-    // Spawn candle mesh
     function spawnCandle(idx: number) {
       const p     = genPrice(idx);
       const xPos  = startX + idx * SPACING;
       const color = p.bull ? 0x16a34a : 0xdc2626;
-
       const bodyH = Math.max(0.06, Math.abs(p.close - p.open));
       const bodyY = (p.open + p.close) / 2;
+      const grp   = new THREE.Group();
 
-      const grp = new THREE.Group();
-
-      // Body
-      const bGeo = new THREE.BoxGeometry(0.65, bodyH, 0.65);
-      const bMat = new THREE.MeshPhongMaterial({ color, shininess: 120, specular: 0x222222 });
-      const body = new THREE.Mesh(bGeo, bMat);
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.65, bodyH, 0.65),
+        new THREE.MeshPhongMaterial({ color, shininess: 120, specular: 0x222222 })
+      );
       body.position.set(0, bodyY, 0);
       grp.add(body);
 
-      // Top wick
       const wTopH = Math.max(0.01, p.high - Math.max(p.open, p.close));
       if (wTopH > 0.01) {
-        const wGeo = new THREE.CylinderGeometry(0.055, 0.055, wTopH, 8);
-        const wick = new THREE.Mesh(wGeo, new THREE.MeshPhongMaterial({ color }));
+        const wick = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.055, 0.055, wTopH, 8),
+          new THREE.MeshPhongMaterial({ color })
+        );
         wick.position.set(0, Math.max(p.open, p.close) + wTopH / 2, 0);
         grp.add(wick);
       }
-      // Bottom wick
       const wBotH = Math.max(0.01, Math.min(p.open, p.close) - p.low);
       if (wBotH > 0.01) {
-        const wGeo = new THREE.CylinderGeometry(0.055, 0.055, wBotH, 8);
-        const wick = new THREE.Mesh(wGeo, new THREE.MeshPhongMaterial({ color }));
+        const wick = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.055, 0.055, wBotH, 8),
+          new THREE.MeshPhongMaterial({ color })
+        );
         wick.position.set(0, Math.min(p.open, p.close) - wBotH / 2, 0);
         grp.add(wick);
       }
@@ -113,12 +126,10 @@ export default function CandleChart() {
       grp.position.set(xPos, 0, 0);
       grp.scale.set(1, 0.001, 1);
       grp.userData = { appearing: true, t: 0 };
-
       scene.add(grp);
       candles.push(grp);
     }
 
-    // Spawn sequence
     let cidx = 0;
     let spawnTimer: ReturnType<typeof setTimeout>;
     function nextCandle() {
@@ -128,9 +139,10 @@ export default function CandleChart() {
     }
     spawnTimer = setTimeout(nextCandle, 600);
 
-    // Mouse / touch drag
+    // 360° spherical trackball rotation
     let isDrag = false, prevX = 0, prevY = 0;
     let rotY = 0, rotX = 0, targetRotY = 0, targetRotX = 0;
+    const MAX_POLAR = Math.PI / 2 - 0.05; // ~85° — prevents camera flip
 
     function onPointerDown(x: number, y: number) { isDrag = true; prevX = x; prevY = y; }
     function onPointerUp() { isDrag = false; }
@@ -138,16 +150,16 @@ export default function CandleChart() {
       if (!isDrag) return;
       targetRotY += (x - prevX) * 0.006;
       targetRotX += (y - prevY) * 0.004;
-      targetRotX  = Math.max(-0.6, Math.min(0.6, targetRotX));
+      targetRotX  = Math.max(-MAX_POLAR, Math.min(MAX_POLAR, targetRotX));
       prevX = x; prevY = y;
     }
 
-    const onMouseDown  = (e: MouseEvent)  => onPointerDown(e.clientX, e.clientY);
-    const onMouseUp    = ()               => onPointerUp();
-    const onMouseMove  = (e: MouseEvent)  => onPointerMove(e.clientX, e.clientY);
-    const onTouchStart = (e: TouchEvent)  => onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
-    const onTouchEnd   = ()               => onPointerUp();
-    const onTouchMove  = (e: TouchEvent)  => onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+    const onMouseDown  = (e: MouseEvent) => onPointerDown(e.clientX, e.clientY);
+    const onMouseUp    = () => onPointerUp();
+    const onMouseMove  = (e: MouseEvent) => onPointerMove(e.clientX, e.clientY);
+    const onTouchStart = (e: TouchEvent) => onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+    const onTouchEnd   = () => onPointerUp();
+    const onTouchMove  = (e: TouchEvent) => onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
 
     canvas.addEventListener('mousedown',  onMouseDown);
     window.addEventListener('mouseup',    onMouseUp);
@@ -156,32 +168,32 @@ export default function CandleChart() {
     window.addEventListener('touchend',   onTouchEnd);
     window.addEventListener('touchmove',  onTouchMove, { passive: true });
 
-    // Resize
     function onResize() {
-      const w = canvas.offsetWidth;
-      const h = canvas.offsetHeight;
-      camera.aspect = w / h;
+      if (!canvas) return;
+      camera.aspect = canvas.offsetWidth / canvas.offsetHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
     }
     window.addEventListener('resize', onResize);
 
-    // Render loop
+    // Render loop — spherical orbit
     let rafId: number;
-    const dist = isMobile ? 22 : 18;
+    const lookAt = new THREE.Vector3(0, 1.8, 0);
     function animate() {
       rafId = requestAnimationFrame(animate);
       rotY += (targetRotY - rotY) * 0.1;
       rotX += (targetRotX - rotX) * 0.1;
-      camera.position.x = Math.sin(rotY) * dist;
-      camera.position.z = Math.cos(rotY) * dist;
-      camera.position.y = 1.5 + rotX * 6;
-      camera.lookAt(0, 1.8, 0);
+
+      // Spherical coordinates for full 360° orbit
+      camera.position.x = dist * Math.cos(rotX) * Math.sin(rotY);
+      camera.position.z = dist * Math.cos(rotX) * Math.cos(rotY);
+      camera.position.y = dist * Math.sin(rotX) + 1.8;
+      camera.lookAt(lookAt);
 
       candles.forEach(grp => {
         if (grp.userData.appearing) {
           grp.userData.t += 0.04;
-          const s = Math.min(1, grp.userData.t);
+          const s    = Math.min(1, grp.userData.t);
           const ease = s < 0.5 ? 2 * s * s : -1 + (4 - 2 * s) * s;
           grp.scale.y = ease;
           if (ease >= 1) { grp.scale.y = 1; grp.userData.appearing = false; }
@@ -206,18 +218,19 @@ export default function CandleChart() {
     };
   }, []);
 
-  const isMobileHeight = typeof window !== 'undefined' && window.innerWidth < 768;
-
   return (
-    <section style={{ width: '100%', height: isMobileHeight ? '60vh' : '100vh', position: 'relative', overflow: 'hidden' }}>
+    <section
+      aria-label="3D candlestick chart animation"
+      style={{ width: '100%', height: isMobile ? '60vh' : '100vh', position: 'relative', overflow: 'hidden' }}
+    >
       <canvas
         ref={canvasRef}
         style={{ width: '100%', height: '100%', display: 'block', cursor: 'grab' }}
       />
 
-      {/* Hero text overlay */}
+      {/* Hero text + stats overlay */}
       <div style={{
-        position: 'absolute', bottom: 70, left: '50%',
+        position: 'absolute', bottom: 60, left: '50%',
         transform: 'translateX(-50%)',
         textAlign: 'center', pointerEvents: 'none', width: '100%',
         padding: '0 24px',
@@ -225,16 +238,38 @@ export default function CandleChart() {
         <h1 style={{
           fontSize: 'clamp(28px, 5vw, 64px)', fontWeight: 800,
           color: 'white', fontFamily: 'Playfair Display, Georgia, serif',
-          lineHeight: 1.1, marginBottom: 12,
+          lineHeight: 1.1, marginBottom: 10,
         }}>
           Master Your <span style={{ color: '#D4AF37' }}>Investment</span> Strategy
         </h1>
         <p style={{
           fontSize: 'clamp(11px, 1.5vw, 13px)', color: 'rgba(255,255,255,0.4)',
-          letterSpacing: '2px', textTransform: 'uppercase',
+          letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 20,
         }}>
           Professional tools for every trader
         </p>
+
+        {/* Stats badges */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 'clamp(12px, 3vw, 32px)', flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: '#D4AF37', fontSize: 15 }}>👥</span>
+            <span className="notranslate" style={{ color: 'white', fontSize: 14, fontWeight: 700 }}>50,000+</span>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>users worldwide</span>
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>·</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>100% Free</span>
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>·</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: '#D4AF37', fontSize: 14 }}>✓</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>No signup required</span>
+          </div>
+        </div>
       </div>
 
       {/* Bottom fade */}

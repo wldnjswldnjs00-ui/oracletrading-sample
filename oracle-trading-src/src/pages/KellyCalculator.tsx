@@ -183,8 +183,8 @@ export default function KellyCalculator() {
                         <button key={key} onClick={() => setSelectedKelly(key)}
                           style={{
                             padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
-                            border: isSelected ? '2px solid #B35900' : '2px solid color-mix(in oklab, var(--primary) 20%, transparent)',
-                            background: isSelected ? '#B35900' : 'color-mix(in oklab, var(--primary) 5%, transparent)',
+                            border: isSelected ? '2px solid color-mix(in oklab, var(--primary) 70%, transparent)' : '2px solid color-mix(in oklab, var(--primary) 20%, transparent)',
+                            background: isSelected ? 'color-mix(in oklab, var(--primary) 40%, var(--background))' : 'color-mix(in oklab, var(--primary) 5%, transparent)',
                             color: isSelected ? '#fff' : 'var(--foreground)',
                             boxShadow: isSelected ? '0 0 24px rgba(179,89,0,0.35)' : 'none',
                             transition: 'all 0.15s ease',

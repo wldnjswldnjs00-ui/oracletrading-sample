@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Router, Route, Switch, useLocation } from 'wouter';
+import { CookieConsent } from './components/CookieConsent';
 
 const Home = lazy(() => import('./pages/Home'));
 const CompoundCalculator = lazy(() => import('./pages/CompoundCalculator'));
@@ -11,9 +12,11 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 function NotFound() {
   const [, navigate] = useLocation();
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-6">
-      <p className="text-muted-foreground" style={{ fontSize: 18 }}>Page not found</p>
-      <button onClick={() => navigate('/')} style={{ padding: '10px 24px', borderRadius: 8, background: 'color-mix(in oklab, var(--primary) 20%, transparent)', border: '1px solid color-mix(in oklab, var(--primary) 40%, transparent)', color: 'var(--gold)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-6" style={{ textAlign: 'center', padding: 24 }}>
+      <div style={{ fontSize: 80, fontWeight: 900, color: 'var(--gold)', fontFamily: 'Playfair Display, Georgia, serif', lineHeight: 1, opacity: 0.3 }}>404</div>
+      <h1 className="text-foreground" style={{ fontSize: 26, fontWeight: 700, fontFamily: 'Playfair Display, Georgia, serif' }}>Page Not Found</h1>
+      <p className="text-muted-foreground" style={{ fontSize: 15, maxWidth: 360 }}>The page you're looking for doesn't exist. Head back to start calculating.</p>
+      <button onClick={() => navigate('/')} style={{ padding: '12px 28px', borderRadius: 8, background: 'color-mix(in oklab, var(--primary) 15%, transparent)', border: '1px solid color-mix(in oklab, var(--primary) 40%, transparent)', color: 'var(--gold)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
         ← Back to Home
       </button>
     </div>
@@ -44,6 +47,7 @@ export default function App() {
           </Route>
         </Switch>
       </Suspense>
+      <CookieConsent />
     </Router>
   );
 }

@@ -84,9 +84,7 @@ export default function MartingaleSimulator() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-primary/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container py-4 flex items-center gap-4">
-          <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, borderRadius: 8 }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in oklab, var(--primary) 10%, transparent)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <button onClick={() => navigate('/')} className="btn-back">
             <ArrowLeft className="w-5 h-5 text-gold" />
           </button>
           <div>

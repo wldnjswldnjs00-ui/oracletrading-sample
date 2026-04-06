@@ -1,41 +1,39 @@
 import { useEffect } from 'react';
 
 const DEFAULT_TITLE = 'Oracle Trading - Investment Strategy Calculator | Compound Interest, Kelly Criterion, Martingale';
-const DEFAULT_DESC = 'Professional investment strategy calculator. Calculate compound interest, optimal position sizing with Kelly Criterion, and martingale pyramid strategies. Free financial tools for serious traders.';
+const DEFAULT_DESC  = 'Free professional trading calculator. Kelly Criterion, Martingale, Compound Interest — for stocks, crypto, gold, S&P 500, Nasdaq. No signup required.';
+const BASE_URL      = 'https://oracletrading.site';
 
 export function usePageMeta(title: string, description: string, ogTitle?: string, ogDescription?: string) {
   useEffect(() => {
-    // Title
     document.title = title;
 
-    // Meta description
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', description);
+    const set = (selector: string, attr: string, value: string) => {
+      const el = document.querySelector(selector);
+      if (el) el.setAttribute(attr, value);
+    };
 
-    // OG title
-    const ogTitleEl = document.querySelector('meta[property="og:title"]');
-    if (ogTitleEl) ogTitleEl.setAttribute('content', ogTitle ?? title);
+    const og  = ogTitle       ?? title;
+    const ogD = ogDescription ?? description;
+    const url = BASE_URL + window.location.pathname;
 
-    // OG description
-    const ogDescEl = document.querySelector('meta[property="og:description"]');
-    if (ogDescEl) ogDescEl.setAttribute('content', ogDescription ?? description);
+    set('meta[name="description"]',        'content', description);
+    set('meta[property="og:title"]',       'content', og);
+    set('meta[property="og:description"]', 'content', ogD);
+    set('meta[property="og:url"]',         'content', url);
+    set('meta[name="twitter:title"]',      'content', og);
+    set('meta[name="twitter:description"]','content', ogD);
+    set('link[rel="canonical"]',           'href',    url);
 
-    // Twitter title
-    const twTitleEl = document.querySelector('meta[name="twitter:title"]');
-    if (twTitleEl) twTitleEl.setAttribute('content', ogTitle ?? title);
-
-    // Twitter description
-    const twDescEl = document.querySelector('meta[name="twitter:description"]');
-    if (twDescEl) twDescEl.setAttribute('content', ogDescription ?? description);
-
-    // Restore defaults on unmount
     return () => {
       document.title = DEFAULT_TITLE;
-      if (metaDesc) metaDesc.setAttribute('content', DEFAULT_DESC);
-      if (ogTitleEl) ogTitleEl.setAttribute('content', 'Oracle Trading - Investment Strategy Calculator');
-      if (ogDescEl) ogDescEl.setAttribute('content', DEFAULT_DESC);
-      if (twTitleEl) twTitleEl.setAttribute('content', 'Oracle Trading - Investment Strategy Calculator');
-      if (twDescEl) twDescEl.setAttribute('content', DEFAULT_DESC);
+      set('meta[name="description"]',        'content', DEFAULT_DESC);
+      set('meta[property="og:title"]',       'content', 'Oracle Trading - Investment Strategy Calculator');
+      set('meta[property="og:description"]', 'content', DEFAULT_DESC);
+      set('meta[property="og:url"]',         'content', BASE_URL + '/');
+      set('meta[name="twitter:title"]',      'content', 'Oracle Trading - Investment Strategy Calculator');
+      set('meta[name="twitter:description"]','content', DEFAULT_DESC);
+      set('link[rel="canonical"]',           'href',    BASE_URL + '/');
     };
   }, [title, description, ogTitle, ogDescription]);
 }
