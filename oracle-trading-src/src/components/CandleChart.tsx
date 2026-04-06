@@ -39,11 +39,11 @@ export default function CandleChart() {
     scene.background = new THREE.Color(0x000000);
 
     // Camera
-    const fov  = mobile ? 55 : 40;
-    const dist = mobile ? 16 : 13;
+    const fov  = mobile ? 55 : 45;
+    const dist = mobile ? 22 : 18;
     const camera = new THREE.PerspectiveCamera(fov, canvas.offsetWidth / canvas.offsetHeight, 0.1, 200);
-    camera.position.set(0, 8, dist);
-    camera.lookAt(0, 2, 0);
+    camera.position.set(0, 2, dist);
+    camera.lookAt(0, 1.5, 0);
 
     // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -178,7 +178,7 @@ export default function CandleChart() {
 
     // Render loop — spherical orbit
     let rafId: number;
-    const lookAt = new THREE.Vector3(0, 2, 0);
+    const lookAt = new THREE.Vector3(0, 1.5, 0);
     function animate() {
       rafId = requestAnimationFrame(animate);
       rotY += (targetRotY - rotY) * 0.1;
@@ -187,7 +187,7 @@ export default function CandleChart() {
       // Spherical coordinates for full 360° orbit
       camera.position.x = dist * Math.cos(rotX) * Math.sin(rotY);
       camera.position.z = dist * Math.cos(rotX) * Math.cos(rotY);
-      camera.position.y = dist * Math.sin(rotX) + 8;
+      camera.position.y = dist * Math.sin(rotX) + 2;
       camera.lookAt(lookAt);
 
       candles.forEach(grp => {
@@ -221,15 +221,11 @@ export default function CandleChart() {
   return (
     <section
       aria-label="3D candlestick chart animation"
-      style={{ width: '100%', height: isMobile ? '42vh' : '50vh', position: 'relative', overflow: 'hidden' }}
+      style={{ width: '100%', height: isMobile ? '55vh' : '65vh', position: 'relative', overflow: 'hidden' }}
     >
       <canvas
         ref={canvasRef}
-        style={{
-          width: '100%', height: isMobile ? '85vh' : '100vh',
-          display: 'block', cursor: 'grab',
-          position: 'absolute', bottom: 0, left: 0,
-        }}
+        style={{ width: '100%', height: '100%', display: 'block', cursor: 'grab' }}
       />
       {/* Bottom fade */}
       <div style={{
