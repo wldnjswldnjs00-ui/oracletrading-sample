@@ -42,7 +42,7 @@ const features = [
 
 function AdBanner({ slot }: { slot: string }) {
   return (
-    <div className="bg-card/50 py-4 border-y border-primary/20">
+    <div style={{ minHeight: 0 }}>
       <div className="container">
         <ins
           className="adsbygoogle"
