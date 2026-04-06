@@ -42,8 +42,8 @@ export default function CandleChart() {
     const fov  = mobile ? 60 : 45;
     const dist = mobile ? 22 : 18;
     const camera = new THREE.PerspectiveCamera(fov, canvas.offsetWidth / canvas.offsetHeight, 0.1, 200);
-    camera.position.set(0, 1.5, dist);
-    camera.lookAt(0, 1.8, 0);
+    camera.position.set(0, 4, dist);
+    camera.lookAt(0, 0, 0);
 
     // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -178,7 +178,7 @@ export default function CandleChart() {
 
     // Render loop — spherical orbit
     let rafId: number;
-    const lookAt = new THREE.Vector3(0, 1.8, 0);
+    const lookAt = new THREE.Vector3(0, 0, 0);
     function animate() {
       rafId = requestAnimationFrame(animate);
       rotY += (targetRotY - rotY) * 0.1;
@@ -187,7 +187,7 @@ export default function CandleChart() {
       // Spherical coordinates for full 360° orbit
       camera.position.x = dist * Math.cos(rotX) * Math.sin(rotY);
       camera.position.z = dist * Math.cos(rotX) * Math.cos(rotY);
-      camera.position.y = dist * Math.sin(rotX) + 1.8;
+      camera.position.y = dist * Math.sin(rotX) + 4;
       camera.lookAt(lookAt);
 
       candles.forEach(grp => {
@@ -221,7 +221,7 @@ export default function CandleChart() {
   return (
     <section
       aria-label="3D candlestick chart animation"
-      style={{ width: '100%', height: isMobile ? '55vh' : '75vh', position: 'relative', overflow: 'hidden' }}
+      style={{ width: '100%', height: isMobile ? '70vh' : '100vh', position: 'relative', overflow: 'hidden' }}
     >
       <canvas
         ref={canvasRef}
