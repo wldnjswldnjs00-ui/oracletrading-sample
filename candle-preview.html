@@ -130,7 +130,7 @@
     <div class="hero-title">Master Your<br><span>Investment</span> Strategy</div>
     <div class="hero-sub">Professional tools for every trader</div>
   </div>
-  <div class="speed-note">Preview mode · 3s per candle</div>
+  <!-- speed-note removed for production -->
 </section>
 
 <div class="divider"></div>
@@ -256,7 +256,7 @@ scene.add(fill);
 // 캔들 설정
 const TOTAL    = 12;
 const SPACING  = 1.6;
-const INTERVAL = 3000; // 미리보기: 3초 (실제 적용 시 60000 = 1분)
+const INTERVAL = 5000; // 미리보기: 5초 (실제 적용 시 60000 = 1분)
 const startX   = -(TOTAL - 1) * SPACING / 2;
 
 let candles   = [];
