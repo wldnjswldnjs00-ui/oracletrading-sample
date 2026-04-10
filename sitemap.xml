@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  
+  <!-- Home Page -->
+  <url>
+    <loc>https://oracletrading.site/</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <mobile:mobile/>
+  </url>
+  
+  <!-- Compound Interest Calculator -->
+  <url>
+    <loc>https://oracletrading.site/compound-calculator</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <mobile:mobile/>
+  </url>
+  
+  <!-- Kelly Criterion Calculator -->
+  <url>
+    <loc>https://oracletrading.site/kelly-calculator</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <mobile:mobile/>
+  </url>
+  
+  <!-- Martingale Simulator -->
+  <url>
+    <loc>https://oracletrading.site/martingale-simulator</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <mobile:mobile/>
+  </url>
+  
+  <!-- VIP Strategy -->
+  <url>
+    <loc>https://oracletrading.site/vip-strategy</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <mobile:mobile/>
+  </url>
+  
+  <!-- Dashboard -->
+  <url>
+    <loc>https://oracletrading.site/dashboard</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <mobile:mobile/>
+  </url>
+  
+</urlset>
