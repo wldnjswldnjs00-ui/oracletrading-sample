@@ -29,9 +29,10 @@ def make_header(mode: str, uptime_sec: float) -> Panel:
     s = int(uptime_sec % 60)
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    mode_tag = "[bold green]📄 PAPER TRADING[/]" if mode == "PAPER" else "[bold red]💰 LIVE TRADING[/]"
-    title = f"  OracleTrading HFT Bot  |  {mode_tag}  |  {now}  |  가동시간: {h:02d}:{m:02d}:{s:02d}  "
-    return Panel(Text(title, justify="center"), style="bold blue", padding=(0, 1))
+    mode_tag = "PAPER TRADING" if mode == "PAPER" else "LIVE TRADING"
+    mode_color = "green" if mode == "PAPER" else "red"
+    title = f"  OracleTrading HFT Bot  |  [{mode_color}]{mode_tag}[/{mode_color}]  |  {now}  |  가동시간: {h:02d}:{m:02d}:{s:02d}  "
+    return Panel(title, style="bold blue", padding=(0, 1))
 
 
 def make_capital_panel(stats: dict) -> Panel:
