@@ -185,7 +185,7 @@ class HFTBot:
         console = Console()
         layout = self.dashboard._make_layout()
 
-        with Live(layout, console=console, refresh_per_second=2, screen=True) as live:
+        with Live(layout, console=console, refresh_per_second=1, screen=True, auto_refresh=True) as live:
             while True:
                 try:
                     recent = self.db.get_recent_trades(12)
@@ -197,10 +197,9 @@ class HFTBot:
                         scanner_summary=self.scanner.summary(),
                         price_info=self._price_info,
                     )
-                    live.update(layout)
                 except Exception as e:
                     logger.warning(f"[Dashboard] 갱신 오류: {e}")
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(1)
 
     # ─────────────────────────────────────────
     # DB 저장 루프 (청산된 포지션 업데이트)
