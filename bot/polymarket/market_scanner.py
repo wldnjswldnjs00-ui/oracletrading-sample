@@ -1,9 +1,8 @@
 """
-Polymarket 시장 스캐너 (개선판)
-BTC/ETH 단기 계약 탐색 - 더 유연한 검색 조건
+Polymarket 시장 스캐너 - BTC/ETH 전용
+BTC/ETH 가격 예측 계약 탐색 (24시간 이내 우선, 최대 7일)
 """
 import asyncio
-import re
 import logging
 import time
 from dataclasses import dataclass, field
@@ -17,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MarketContract:
-    """폴리마켓 단기 예측 계약"""
+    """폴리마켓 가격 예측 계약"""
     market_id: str
     question: str
-    symbol: str
-    direction: str        # UP or DOWN
+    symbol: str         # BTC or ETH
+    direction: str      # UP (YES=가격상승) or DOWN (YES=가격하락)
     duration_min: int
     end_time: float
     yes_token_id: str
@@ -41,6 +40,11 @@ class MarketContract:
         return self.time_remaining_sec > 30
 
     def target_token_id(self, direction: str) -> str:
+        """
+        UP 신호 → YES 토큰 (BTC 상승에 베팅)
+        DOWN 신호 → NO 토큰 (BTC 하락에 베팅)
+        계약 direction과 신호 direction이 일치해야 함
+        """
         return self.yes_token_id if direction == "UP" else self.no_token_id
 
     def target_odds(self, direction: str) -> float:
@@ -52,13 +56,13 @@ class MarketScanner:
         self.client = client
         self.active_contracts: Dict[str, MarketContract] = {}
         self._running = False
-        self._scan_interval = 20
-        self._odds_interval = 1.0
+        self._scan_interval = 30   # 30초마다 새 계약 탐색
+        self._odds_interval = 1.0  # 1초마다 오즈 업데이트
         self._scan_count = 0
 
     async def start(self):
         self._running = True
-        logger.info("[Scanner] 시장 스캐너 시작")
+        logger.info("[Scanner] BTC/ETH 전용 시장 스캐너 시작")
         await asyncio.gather(
             self._scan_loop(),
             self._odds_update_loop(),
@@ -78,24 +82,27 @@ class MarketScanner:
             await asyncio.sleep(self._scan_interval)
 
     async def _discover_markets(self):
-        """다양한 방법으로 BTC/ETH 단기 계약 탐색"""
+        """BTC/ETH 가격 예측 계약 탐색 (암호화폐 태그만 검색)"""
         all_markets = []
         seen_ids = set()
 
-        # 여러 태그로 검색
-        search_tags = ["crypto", "bitcoin", "ethereum", "btc", "eth", "price", ""]
+        # BTC/ETH 관련 태그만 검색 (무관한 시장 제외)
+        search_tags = ["crypto", "bitcoin", "ethereum", "btc", "eth", "cryptocurrency"]
         for tag in search_tags:
             try:
                 markets = await self.client.get_markets(tag=tag)
                 for m in markets:
                     mid = m.get("conditionId") or m.get("id") or ""
                     if mid and mid not in seen_ids:
-                        seen_ids.add(mid)
-                        all_markets.append(m)
+                        # 1차 필터: BTC/ETH 관련 질문인지 확인
+                        q = (m.get("question","") or m.get("title","")).lower()
+                        if any(k in q for k in ["btc","bitcoin","eth","ethereum"]):
+                            seen_ids.add(mid)
+                            all_markets.append(m)
             except Exception as e:
                 logger.debug(f"[Scanner] 태그 '{tag}' 검색 오류: {e}")
 
-        logger.info(f"[Scanner] 총 {len(all_markets)}개 시장 발견, BTC/ETH 단기 계약 필터링 중...")
+        logger.info(f"[Scanner] BTC/ETH 후보 시장 {len(all_markets)}개 발견, 계약 파싱 중...")
 
         found = 0
         for market in all_markets:
@@ -103,13 +110,18 @@ class MarketScanner:
             if contract and contract.market_id not in self.active_contracts:
                 self.active_contracts[contract.market_id] = contract
                 found += 1
+                remaining_h = contract.time_remaining_sec / 3600
                 logger.info(
-                    f"[Scanner] ✓ 계약 발견: {contract.symbol} {contract.direction} "
-                    f"| 만기 {contract.time_remaining_sec/60:.1f}분 후"
+                    f"[Scanner] ✓ {contract.symbol} {contract.direction} 계약 발견: "
+                    f"'{contract.question[:50]}' | "
+                    f"만기: {remaining_h:.1f}시간 후"
                 )
 
-        if found == 0 and self._scan_count % 3 == 0:
-            logger.info("[Scanner] BTC/ETH 단기 계약 없음 - 계속 탐색 중...")
+        if self._scan_count % 5 == 0 or found > 0:
+            total = len(self.active_contracts)
+            btc = sum(1 for c in self.active_contracts.values() if c.symbol == "BTC")
+            eth = sum(1 for c in self.active_contracts.values() if c.symbol == "ETH")
+            logger.info(f"[Scanner] 활성 BTC/ETH 계약: 총 {total}개 (BTC: {btc}, ETH: {eth})")
 
     def _parse_market(self, market: Dict) -> Optional[MarketContract]:
         question = (
@@ -122,26 +134,34 @@ class MarketScanner:
 
         q_lower = question.lower()
 
-        # BTC 또는 ETH 포함 여부
+        # BTC 또는 ETH 관련 시장인지 확인
         symbol = None
         if any(k in q_lower for k in ["btc", "bitcoin"]):
             symbol = "BTC"
         elif any(k in q_lower for k in ["eth", "ethereum"]):
             symbol = "ETH"
         else:
-            return None
+            return None  # BTC/ETH 아닌 시장은 완전 제외
 
         # 가격 방향 확인
-        direction = None
-        up_keywords   = ["higher", "above", "up", "rise", "increase", "bull", "over"]
-        down_keywords  = ["lower", "below", "down", "fall", "decrease", "drop", "bear", "under"]
+        # UP: YES = "가격이 X 이상/이상으로 오른다"
+        up_keywords   = ["above", "higher", "over", "exceed", "reach", "hit", "rise",
+                         "up", "bull", "break", "surpass", "top", "high"]
+        down_keywords = ["below", "lower", "under", "drop", "fall", "crash",
+                         "down", "bear", "decline", "dip", "below"]
 
-        if any(k in q_lower for k in up_keywords):
+        direction = None
+        up_score   = sum(1 for k in up_keywords   if k in q_lower)
+        down_score = sum(1 for k in down_keywords if k in q_lower)
+
+        if up_score > down_score:
             direction = "UP"
-        elif any(k in q_lower for k in down_keywords):
+        elif down_score > up_score:
             direction = "DOWN"
+        elif up_score > 0:
+            direction = "UP"   # 동점이면 UP으로 처리
         else:
-            return None
+            return None  # 방향 불명확 시 제외
 
         # 만기 시간 파싱
         end_time = self._parse_end_time(market)
@@ -152,8 +172,12 @@ class MarketScanner:
         duration_sec = end_time - time.time()
         duration_min = duration_sec / 60
 
-        # 0~60분 이내 계약만 허용 (더 유연하게)
-        if duration_min < 0 or duration_min > 60:
+        # 1분 미만 (이미 만료됨) 제외
+        if duration_min < 1:
+            return None
+
+        # 7일(10080분) 초과는 가격 변동 영향이 너무 작아 제외
+        if duration_min > 10080:
             return None
 
         # 토큰 ID 추출
@@ -178,12 +202,13 @@ class MarketScanner:
 
     def _parse_end_time(self, market: Dict) -> Optional[float]:
         import datetime
-        for key in ["endDate", "endDateIso", "end_date", "expiresAt", "resolveDate"]:
+        for key in ["endDate", "endDateIso", "end_date", "expiresAt",
+                    "resolveDate", "endTime", "expiry"]:
             val = market.get(key)
             if not val:
                 continue
             try:
-                if isinstance(val, (int, float)):
+                if isinstance(val, (int, float)) and val > 1_000_000_000:
                     return float(val)
                 val_str = str(val).replace("Z", "+00:00")
                 dt = datetime.datetime.fromisoformat(val_str)
@@ -193,24 +218,23 @@ class MarketScanner:
         return None
 
     def _extract_tokens(self, market: Dict):
+        import json
         yes_token = ""
         no_token = ""
 
         # 방법 1: clobTokenIds 배열
         tokens = market.get("clobTokenIds", [])
         if isinstance(tokens, str):
-            import json
             try:
                 tokens = json.loads(tokens)
             except Exception:
                 tokens = []
         if len(tokens) >= 2:
-            return tokens[0], tokens[1]
+            return str(tokens[0]), str(tokens[1])
 
         # 방법 2: outcomes 배열
         outcomes = market.get("outcomes", [])
         if isinstance(outcomes, str):
-            import json
             try:
                 outcomes = json.loads(outcomes)
             except Exception:
@@ -218,16 +242,16 @@ class MarketScanner:
         for outcome in outcomes:
             if isinstance(outcome, dict):
                 name = outcome.get("outcome", outcome.get("name", "")).upper()
-                tid = outcome.get("tokenId", outcome.get("token_id", ""))
+                tid = str(outcome.get("tokenId", outcome.get("token_id", "")))
                 if "YES" in name:
                     yes_token = tid
                 elif "NO" in name:
                     no_token = tid
 
-        # 방법 3: outcomePrices + tokens 별도 필드
+        # 방법 3: 개별 필드
         if not yes_token:
-            yes_token = market.get("yesTokenId", market.get("yes_token_id", ""))
-            no_token  = market.get("noTokenId",  market.get("no_token_id",  ""))
+            yes_token = str(market.get("yesTokenId", market.get("yes_token_id", "")))
+            no_token  = str(market.get("noTokenId",  market.get("no_token_id",  "")))
 
         return yes_token, no_token
 
@@ -237,7 +261,8 @@ class MarketScanner:
             if not c.is_active
         ]
         for mid in expired:
-            del self.active_contracts[mid]
+            c = self.active_contracts.pop(mid)
+            logger.debug(f"[Scanner] 만기 제거: {c.symbol} {c.direction} '{c.question[:40]}'")
 
     async def _odds_update_loop(self):
         while self._running:
@@ -257,23 +282,46 @@ class MarketScanner:
     async def _update_contract_odds(self, contract: MarketContract):
         book = await self.client.get_orderbook(contract.yes_token_id)
         if book:
-            contract.yes_odds    = book["mid"]
-            contract.no_odds     = 1.0 - book["mid"]
+            contract.yes_odds     = book["mid"]
+            contract.no_odds      = 1.0 - book["mid"]
             contract.liquidity_usd = book["liquidity_usd"]
             contract.last_updated  = time.time()
 
     def get_contracts_for(self, symbol: str) -> List[MarketContract]:
-        return [c for c in self.active_contracts.values() if c.symbol == symbol and c.is_active]
-
-    def get_best_contract(self, symbol: str, direction: str) -> Optional[MarketContract]:
-        candidates = [
+        return [
             c for c in self.active_contracts.values()
             if c.symbol == symbol and c.is_active
         ]
+
+    def get_best_contract(self, symbol: str, direction: str) -> Optional[MarketContract]:
+        """
+        주어진 심볼/방향에 맞는 최적 계약 반환
+        - 방향 일치 필수 (UP 신호 → UP 계약, DOWN 신호 → DOWN 계약)
+        - 유동성 기준 정렬 (높을수록 우선)
+        - 유동성 없어도 계약이 있으면 반환 (실거래 진입은 유동성 체크 별도)
+        """
+        candidates = [
+            c for c in self.active_contracts.values()
+            if c.symbol == symbol
+            and c.direction == direction
+            and c.is_active
+        ]
         if not candidates:
-            return None
-        # 유동성 기준 정렬, 유동성 없어도 일단 반환
-        return max(candidates, key=lambda c: c.liquidity_usd)
+            # 방향 매칭 안 되면 반대 방향 NO 토큰으로 대응 가능한 계약 탐색
+            # (예: DOWN 신호인데 UP 계약만 있으면, UP 계약의 NO 토큰 매수)
+            candidates = [
+                c for c in self.active_contracts.values()
+                if c.symbol == symbol and c.is_active
+            ]
+            if not candidates:
+                return None
+
+        # 유동성 높은 순 정렬, 유동성 없으면 만기 짧은 순 (더 민감)
+        candidates.sort(
+            key=lambda c: (c.liquidity_usd, -c.time_remaining_sec),
+            reverse=True
+        )
+        return candidates[0]
 
     def summary(self) -> str:
         total = len(self.active_contracts)

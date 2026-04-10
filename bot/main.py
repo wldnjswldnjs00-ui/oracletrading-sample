@@ -30,6 +30,7 @@ import config
 from feeds.binance_ws import BinanceFeed
 from polymarket.api_client import PolymarketClient
 from polymarket.market_scanner import MarketScanner
+from polymarket.simulated_contracts import SimulatedMarketScanner
 from strategy.signal_engine import SignalEngine
 from execution.paper_engine import PaperEngine
 from risk.risk_manager import RiskManager, BotState
@@ -39,12 +40,13 @@ from utils.dashboard import Dashboard
 
 class HFTBot:
     """
-    라텐시 아비트라지 고빈도 매매 봇
+    라텐시 아비트라지 고빈도 매매 봇 - BTC/ETH 전용
 
     구조:
     BinanceFeed → SignalEngine → PaperEngine → RiskManager
                                       ↓
-                              MarketScanner (폴리마켓 오즈)
+                     MarketScanner (실폴리마켓) 또는
+                     SimulatedScanner (가상 BTC/ETH 계약)
     """
 
     def __init__(self, live_mode: bool = False):
@@ -56,6 +58,7 @@ class HFTBot:
         # 컴포넌트 초기화
         self.poly_client   = PolymarketClient()
         self.scanner       = MarketScanner(self.poly_client)
+        self.sim_scanner   = SimulatedMarketScanner()   # 실계약 없을 때 폴백
         self.signal_engine = SignalEngine()
         self.paper_engine  = PaperEngine(config.INITIAL_SEED)
         self.risk_manager  = RiskManager(on_halt=self._on_halt)
@@ -72,6 +75,7 @@ class HFTBot:
         self._start_time = time.time()
         self._signals_generated = 0
         self._signals_skipped_risk = 0
+        self._no_contract_count = 0   # 계약 없어서 스킵된 횟수
 
     # ─────────────────────────────────────────
     # 메인 실행
@@ -116,22 +120,32 @@ class HFTBot:
         self._price_info[symbol] = price
         self._price_info[f"{symbol}_chg"] = change_pct
 
+        # 시뮬레이터에 가격 업데이트
+        self.sim_scanner.update_price(symbol, price, timestamp)
+
         # 리스크 체크
         can_trade, reason = self.risk_manager.can_trade()
         if not can_trade:
             self._signals_skipped_risk += 1
             return
 
-        # 현재 포지션이 너무 많으면 신규 진입 보류
-        # (자본이 이미 묶인 경우 - 풀시드 원칙)
+        # 현재 포지션이 너무 많으면 신규 진입 보류 (풀시드 원칙)
         if self.paper_engine.available_capital < 1.0:
             return
 
-        # 해당 심볼의 최적 계약 조회
-        contract = self.scanner.get_best_contract(symbol, direction="UP")
+        # 가격 변동 방향 결정
+        direction = "UP" if change_pct >= 0 else "DOWN"
+
+        # ① 실폴리마켓 계약 조회 (BTC/ETH 전용)
+        contract = self.scanner.get_best_contract(symbol, direction)
+
+        # ② 실계약 없으면 시뮬레이션 계약 사용
         if not contract:
-            # DOWN 계약도 확인
-            contract = self.scanner.get_best_contract(symbol, direction="DOWN")
+            self._no_contract_count += 1
+            # 일정 횟수 이상 실계약 없으면 시뮬레이션 활성화
+            if self._no_contract_count > 100:
+                self.sim_scanner.enable()
+            contract = self.sim_scanner.get_best_contract(symbol, direction)
 
         # 신호 생성
         signal = self.signal_engine.generate_signal(
@@ -189,12 +203,15 @@ class HFTBot:
             while True:
                 try:
                     recent = self.db.get_recent_trades(12)
+                    real_summary = self.scanner.summary()
+                    sim_summary  = self.sim_scanner.summary()
+                    scanner_summary = f"{real_summary} | {sim_summary}"
                     self.dashboard.update(
                         layout=layout,
                         engine_stats=self.paper_engine.get_stats(),
                         risk_stats=self.risk_manager.get_stats(),
                         recent_trades=recent,
-                        scanner_summary=self.scanner.summary(),
+                        scanner_summary=scanner_summary,
                         price_info=self._price_info,
                     )
                 except Exception as e:
