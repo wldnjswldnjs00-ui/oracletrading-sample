@@ -179,11 +179,13 @@ class HFTBot:
     # ─────────────────────────────────────────
     async def _dashboard_loop(self):
         """0.5초마다 대시보드 갱신"""
-        layout = None
-        live = self.dashboard.start()
+        from rich.live import Live
+        from rich.console import Console
 
-        with live:
-            layout = live.renderable
+        console = Console()
+        layout = self.dashboard._make_layout()
+
+        with Live(layout, console=console, refresh_per_second=2, screen=True) as live:
             while True:
                 try:
                     recent = self.db.get_recent_trades(12)
@@ -195,8 +197,9 @@ class HFTBot:
                         scanner_summary=self.scanner.summary(),
                         price_info=self._price_info,
                     )
+                    live.update(layout)
                 except Exception as e:
-                    logger.debug(f"[Dashboard] 갱신 오류: {e}")
+                    logger.warning(f"[Dashboard] 갱신 오류: {e}")
                 await asyncio.sleep(0.5)
 
     # ─────────────────────────────────────────
