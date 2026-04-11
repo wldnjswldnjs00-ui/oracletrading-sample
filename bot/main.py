@@ -28,7 +28,6 @@ import config
 from feeds.binance_ws import BinanceFeed
 from polymarket.api_client import PolymarketClient
 from polymarket.market_scanner import MarketScanner
-from polymarket.simulated_contracts import SimulatedMarketScanner
 from strategy.signal_engine import SignalEngine
 from execution.paper_engine import PaperEngine
 from risk.risk_manager import RiskManager, BotState
@@ -38,13 +37,13 @@ from utils.dashboard import Dashboard
 
 class HFTBot:
     """
-    라텐시 아비트라지 고빈도 매매 봇 - BTC/ETH 전용
+    라텐시 아비트라지 고빈도 매매 봇
 
     구조:
     BinanceFeed → SignalEngine → PaperEngine → RiskManager
                                       ↓
-                     MarketScanner (실폴리마켓) 또는
-                     SimulatedScanner (가상 BTC/ETH 계약)
+                     MarketScanner (실폴리마켓 실시간 계약/오즈)
+    페이퍼 트레이딩 = 실제 폴리마켓 데이터, 실제 주문만 안 넣는 것
     """
 
     def __init__(self, live_mode: bool = False):
@@ -56,8 +55,6 @@ class HFTBot:
         # 컴포넌트 초기화
         self.poly_client   = PolymarketClient()
         self.scanner       = MarketScanner(self.poly_client)
-        self.sim_scanner   = SimulatedMarketScanner()   # 항상 활성: 실계약 유동성 부족 시 폴백
-        self.sim_scanner.enable()                        # 시작부터 시뮬레이션 활성화
         self.signal_engine = SignalEngine()
         self.db            = TradeDB()
         # DB에서 마지막 자본 복원 (껐다 켜도 자본 유지)
@@ -67,7 +64,9 @@ class HFTBot:
         self.dashboard     = Dashboard(mode=mode_str)
 
         # 가격 정보 (대시보드 표시용)
-        self._price_info: dict = {"BTC": 0, "ETH": 0, "BTC_chg": 0, "ETH_chg": 0}
+        self._price_info: dict = {sym: 0 for sym in config.TARGET_SYMBOLS}
+        for sym in config.TARGET_SYMBOLS:
+            self._price_info[f"{sym}_chg"] = 0
 
         # 일별 리셋 스케줄
         self._next_daily_reset = self._calc_next_midnight()
@@ -133,30 +132,23 @@ class HFTBot:
         self._price_info[symbol] = price
         self._price_info[f"{symbol}_chg"] = change_pct
 
-        # 시뮬레이터에 가격 업데이트
-        self.sim_scanner.update_price(symbol, price, timestamp)
-
         # 리스크 체크
         can_trade, reason = self.risk_manager.can_trade()
         if not can_trade:
             self._signals_skipped_risk += 1
             return
 
-        # 현재 포지션이 너무 많으면 신규 진입 보류 (풀시드 원칙)
+        # 현재 포지션이 너무 많으면 신규 진입 보류
         if self.paper_engine.available_capital < 1.0:
             return
 
         # 가격 변동 방향 결정
         direction = "UP" if change_pct >= 0 else "DOWN"
 
-        # ① 실폴리마켓 계약 조회 (BTC/ETH 전용)
+        # 실폴리마켓 계약 조회 (유동성 최소 기준 충족 여부 포함)
         contract = self.scanner.get_best_contract(symbol, direction)
-
-        # ② 실계약 없거나 유동성 부족 → 시뮬레이션 계약으로 폴백
         if not contract or contract.liquidity_usd < config.MIN_MARKET_LIQUIDITY_USD:
-            sim_contract = self.sim_scanner.get_best_contract(symbol, direction)
-            if sim_contract:
-                contract = sim_contract
+            return  # 실계약 없거나 유동성 부족 → 진입 안 함
 
         # 신호 생성
         signal = self.signal_engine.generate_signal(
@@ -214,9 +206,7 @@ class HFTBot:
             while True:
                 try:
                     recent = self.db.get_recent_trades(12)
-                    real_summary = self.scanner.summary()
-                    sim_summary  = self.sim_scanner.summary()
-                    scanner_summary = f"{real_summary} | {sim_summary}"
+                    scanner_summary = self.scanner.summary()
                     engine_stats = self.paper_engine.get_stats()
                     # DB 누적 통계로 덮어쓰기 (재시작해도 누적 표시)
                     db_stats = self.db.get_total_stats()

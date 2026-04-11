@@ -155,23 +155,22 @@ def make_recent_trades_panel(trades: list) -> Panel:
 
 
 def make_market_panel(scanner_summary: str, price_info: dict) -> Panel:
-    """시장 현황 패널"""
-    btc = price_info.get("BTC", 0)
-    eth = price_info.get("ETH", 0)
-    btc_chg = price_info.get("BTC_chg", 0)
-    eth_chg = price_info.get("ETH_chg", 0)
+    """시장 현황 패널 - 10개 코인"""
+    table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+    table.add_column("심볼", style="dim", width=5)
+    table.add_column("가격", justify="right", width=14)
+    table.add_column("변동", justify="right", width=8)
 
-    btc_color = "green" if btc_chg >= 0 else "red"
-    eth_color = "green" if eth_chg >= 0 else "red"
+    for sym in config.TARGET_SYMBOLS:
+        price = price_info.get(sym, 0)
+        chg   = price_info.get(f"{sym}_chg", 0)
+        color = "green" if chg >= 0 else "red"
+        # BTC는 소수점 2자리, 나머지는 4자리
+        price_str = f"${price:>10,.2f}" if sym == "BTC" else f"${price:>10,.4f}"
+        table.add_row(sym, f"[{color}]{price_str}[/]", f"[{color}]{chg:>+.2f}%[/]")
 
-    table = Table(box=box.SIMPLE, show_header=False, padding=(0, 2))
-    table.add_column("항목",  style="dim")
-    table.add_column("값",    justify="right")
-
-    table.add_row("BTC",  f"[{btc_color}]${btc:>10,.2f}  ({btc_chg:>+.2f}%)[/]")
-    table.add_row("ETH",  f"[{eth_color}]${eth:>10,.4f}  ({eth_chg:>+.2f}%)[/]")
-    table.add_row("",     "")
-    table.add_row("폴리마켓", f"[dim]{scanner_summary}[/]")
+    table.add_row("", "", "")
+    table.add_row("[dim]폴리[/]", f"[dim]{scanner_summary}[/]", "")
 
     return Panel(table, title="[bold]📈 시장 현황[/]", border_style="magenta")
 
