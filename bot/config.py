@@ -35,7 +35,7 @@ PRICE_WINDOW_SEC          = 15     # 가격 변동 감시 시간창 (초) - 빠�
 
 # 청산 조건
 MAX_HOLD_TIME_SEC    = 5      # 진입 후 최대 보유 시간 (초) - 빠른 재활용
-ODDS_CONVERGENCE_PCT = 0.010  # 오즈 수렴 감지 임계치 (1.0%p 수렴 시 청산)
+ODDS_CONVERGENCE_PCT = 0.005  # 오즈 수렴 감지 임계치 (0.5%p 수렴 시 청산)
 STOP_LOSS_PCT        = 0.02   # 오즈가 역방향으로 2%p 이상 벌어지면 손절
 
 # 유동성 체크
