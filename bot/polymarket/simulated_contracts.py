@@ -95,10 +95,10 @@ class SimulatedMarketScanner:
     CONTRACT_REFRESH_SEC  = 300  # 5분마다 계약 갱신 (앵커 리셋 없음)
 
     def __init__(self):
-        self._contracts: Dict[str, object] = {}  # MarketContract 호환 오브젝트
+        self._contracts: Dict[str, object] = {}
+        # 모든 대상 심볼에 대해 오즈 모델 생성
         self._odds_models: Dict[str, LaggingOddsModel] = {
-            "BTC": LaggingOddsModel("BTC"),
-            "ETH": LaggingOddsModel("ETH"),
+            sym: LaggingOddsModel(sym) for sym in config.TARGET_SYMBOLS
         }
         self._contract_start_times: Dict[str, float] = {}
         self._last_prices: Dict[str, float] = {}
@@ -126,7 +126,7 @@ class SimulatedMarketScanner:
     def _refresh_contracts(self):
         """5분마다 계약 갱신"""
         now = time.time()
-        for symbol in ["BTC", "ETH"]:
+        for symbol in config.TARGET_SYMBOLS:
             start = self._contract_start_times.get(symbol, 0)
             if now - start >= self.CONTRACT_REFRESH_SEC:
                 price = self._last_prices.get(symbol, 0)
@@ -169,7 +169,8 @@ class SimulatedMarketScanner:
         if not self._enabled:
             return "비활성"
         active = sum(1 for c in self._contracts.values() if c.is_active)
-        return f"시뮬레이션: {active}개 가상 계약 활성"
+        syms = [s for s, c in self._contracts.items() if c.is_active]
+        return f"시뮬: {active}개 활성 ({','.join(syms[:5])}{'...' if len(syms)>5 else ''})"
 
 
 class SimulatedContract:

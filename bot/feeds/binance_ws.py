@@ -1,6 +1,7 @@
 """
 Binance WebSocket 실시간 가격 피드
-BTC/ETH 체결가를 50ms 이내 수신
+10개 코인 체결가를 50ms 이내 수신
+BTC, ETH, SOL, BNB, XRP, AVAX, LINK, MATIC, DOT, DOGE
 """
 import asyncio
 import json
@@ -66,9 +67,16 @@ class BinanceFeed:
             인자: (symbol: str, price: float, change_pct: float, timestamp: float)
         """
         self.on_price_update = on_price_update
+        # 모든 대상 심볼에 대해 PriceBar 생성
         self.bars: Dict[str, PriceBar] = {
-            "BTC": PriceBar(config.PRICE_WINDOW_SEC),
-            "ETH": PriceBar(config.PRICE_WINDOW_SEC),
+            sym: PriceBar(config.PRICE_WINDOW_SEC) for sym in config.TARGET_SYMBOLS
+        }
+        # 바이낸스 스트림 심볼 → 내부 심볼 매핑
+        self._symbol_map: Dict[str, str] = {
+            "BTCUSDT": "BTC",  "ETHUSDT": "ETH",  "SOLUSDT": "SOL",
+            "BNBUSDT": "BNB",  "XRPUSDT": "XRP",  "AVAXUSDT": "AVAX",
+            "LINKUSDT": "LINK","MATICUSDT":"MATIC","DOTUSDT": "DOT",
+            "DOGEUSDT": "DOGE",
         }
         self._running = False
         self._ws = None
@@ -131,13 +139,10 @@ class BinanceFeed:
         if "@trade" not in stream:
             return
 
-        # 심볼 파싱 (btcusdt → BTC)
-        symbol_raw = payload.get("s", "")
-        if "BTC" in symbol_raw.upper():
-            symbol = "BTC"
-        elif "ETH" in symbol_raw.upper():
-            symbol = "ETH"
-        else:
+        # 심볼 파싱 (BTCUSDT → BTC)
+        symbol_raw = payload.get("s", "").upper()
+        symbol = self._symbol_map.get(symbol_raw)
+        if not symbol:
             return
 
         price = float(payload["p"])   # 체결가

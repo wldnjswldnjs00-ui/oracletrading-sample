@@ -89,6 +89,7 @@ class PaperEngine:
 
         self._trade_counter = 0
         self._locked_capital = 0.0   # 현재 포지션에 묶인 자본
+        self._active_symbols: set = set()  # 현재 포지션 있는 심볼 (중복 방지)
 
         # 통계
         self.total_trades = 0
@@ -113,27 +114,27 @@ class PaperEngine:
 
     def _calculate_position_size(self, contract: MarketContract) -> float:
         """
-        포지션 사이즈 결정
+        포지션 사이즈 결정 (멀티-심볼 분할 운용)
 
-        $5,000 미만: 가용 자본 100% 풀시드
-        $5,000 이상: 유동성 기반 분할 (추후 구현)
+        총 자산을 MAX_OPEN_POSITIONS 슬롯으로 분할
+        각 심볼당 1개 포지션 = 최대 동시 10개 운용
         """
-        available = self.available_capital
+        # 이미 해당 심볼에 포지션 있으면 진입 불가
+        if contract.symbol in self._active_symbols:
+            return 0.0
 
+        available = self.available_capital
         if available <= 0:
             return 0.0
 
-        if self.capital < config.FULL_SEED_THRESHOLD:
-            # 풀시드 모드: 가용 자본 전액
-            size = available
-        else:
-            # $5,000 이상 → 유동성 기반 분할
-            # 유동성의 최대 20% 또는 가용자본 50% 중 작은 값
-            max_by_liquidity = contract.liquidity_usd * 0.20
-            max_by_capital = available * 0.50
-            size = min(max_by_liquidity, max_by_capital)
+        # 슬롯 크기 = 총 자산 / 최대 포지션 수
+        num_slots = max(1, config.MAX_OPEN_POSITIONS)
+        slot_size = self.total_equity / num_slots
 
-        # 유동성 체크: 계약 유동성이 투입 규모를 감당하는지
+        # 가용 자본 초과 불가
+        size = min(slot_size, available)
+
+        # 유동성 체크: 계약 유동성의 30% 초과 불가
         if size > contract.liquidity_usd * 0.30:
             size = contract.liquidity_usd * 0.30
             logger.debug(f"[Paper] 유동성 부족으로 사이즈 축소: ${size:.2f}")
@@ -192,9 +193,10 @@ class PaperEngine:
             contract=contract,
         )
 
-        # 자본 잠금
+        # 자본 잠금 + 심볼 슬롯 점유
         self._locked_capital += size
         self.capital -= size
+        self._active_symbols.add(signal.symbol)
         self.open_positions[trade_id] = position
 
         logger.info(
@@ -294,7 +296,8 @@ class PaperEngine:
         self.total_pnl += pnl
         self.daily_pnl += pnl
 
-        # 이동
+        # 심볼 슬롯 해제 + 이동
+        self._active_symbols.discard(position.symbol)
         if position.trade_id in self.open_positions:
             del self.open_positions[position.trade_id]
         self.closed_positions.append(position)

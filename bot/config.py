@@ -29,7 +29,7 @@ COOLDOWN_SEC          = 300    # 강제 휴식 시간 (초)
 # 전략 파라미터
 # ─────────────────────────────────────────
 # 진입 조건
-MIN_PRICE_MOVE_PCT        = 0.05   # 바이낸스 가격이 N초 내 최소 0.05% 움직여야 신호 발생
+MIN_PRICE_MOVE_PCT        = 0.02   # 바이낸스 가격이 N초 내 최소 0.02% 움직여야 신호 발생
 MIN_GAP_PERCENTAGE_POINTS = 1.5    # 폴리마켓 오즈와 실제 확률 괴리 최소 1.5%p 이상
 PRICE_WINDOW_SEC          = 15     # 가격 변동 감시 시간창 (초) - 빠른 반응
 
@@ -43,10 +43,11 @@ MIN_MARKET_LIQUIDITY_USD = 1_000    # 최소 시장 유동성 $1,000 (페이퍼 
 FILL_SPEED_THRESHOLD_SEC = 0.5      # 풀시드 주문 0.5초 내 체결 = 유동성 양호 판단
 
 # ─────────────────────────────────────────
-# 대상 시장 (BTC/ETH 단기 계약만)
+# 대상 시장 (10개 코인 동시 운용)
 # ─────────────────────────────────────────
-TARGET_SYMBOLS   = ["BTC", "ETH"]
-TARGET_DURATIONS = [5, 15]    # 분 단위 계약 (5분, 15분)
+TARGET_SYMBOLS = ["BTC", "ETH", "SOL", "BNB", "XRP", "AVAX", "LINK", "MATIC", "DOT", "DOGE"]
+MAX_OPEN_POSITIONS = len(TARGET_SYMBOLS)   # 심볼당 1개 = 최대 10개 동시 포지션
+TARGET_DURATIONS = [5, 15, 60, 240, 1440]  # 분 단위 (5분~1일 계약 전부)
 
 # ─────────────────────────────────────────
 # Binance WebSocket
@@ -55,6 +56,14 @@ BINANCE_WS_URL = "wss://stream.binance.com:9443/stream"
 BINANCE_STREAMS = [
     "btcusdt@trade",
     "ethusdt@trade",
+    "solusdt@trade",
+    "bnbusdt@trade",
+    "xrpusdt@trade",
+    "avaxusdt@trade",
+    "linkusdt@trade",
+    "maticusdt@trade",
+    "dotusdt@trade",
+    "dogeusdt@trade",
 ]
 BINANCE_API_KEY    = os.getenv("BINANCE_API_KEY", "")
 BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET", "")

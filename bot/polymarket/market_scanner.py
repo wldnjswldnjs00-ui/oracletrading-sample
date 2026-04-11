@@ -1,6 +1,6 @@
 """
-Polymarket 시장 스캐너 - BTC/ETH 전용
-BTC/ETH 가격 예측 계약 탐색 (24시간 이내 우선, 최대 7일)
+Polymarket 시장 스캐너 - 10개 코인 전체
+BTC/ETH/SOL/BNB/XRP/AVAX/LINK/MATIC/DOT/DOGE 가격 예측 계약 탐색
 """
 import asyncio
 import logging
@@ -62,7 +62,7 @@ class MarketScanner:
 
     async def start(self):
         self._running = True
-        logger.info("[Scanner] BTC/ETH 전용 시장 스캐너 시작")
+        logger.info("[Scanner] 10코인 시장 스캐너 시작 (BTC/ETH/SOL/BNB/XRP/AVAX/LINK/MATIC/DOT/DOGE)")
         await asyncio.gather(
             self._scan_loop(),
             self._odds_update_loop(),
@@ -81,28 +81,47 @@ class MarketScanner:
                 logger.error(f"[Scanner] 탐색 오류: {e}")
             await asyncio.sleep(self._scan_interval)
 
+    # 심볼 → 검색 키워드 매핑
+    SYMBOL_KEYWORDS = {
+        "BTC":  ["btc", "bitcoin"],
+        "ETH":  ["eth", "ethereum"],
+        "SOL":  ["sol", "solana"],
+        "BNB":  ["bnb", "binance coin", "binancecoin"],
+        "XRP":  ["xrp", "ripple"],
+        "AVAX": ["avax", "avalanche"],
+        "LINK": ["link", "chainlink"],
+        "MATIC":["matic", "polygon"],
+        "DOT":  ["dot", "polkadot"],
+        "DOGE": ["doge", "dogecoin"],
+    }
+
     async def _discover_markets(self):
-        """BTC/ETH 가격 예측 계약 탐색 (암호화폐 태그만 검색)"""
+        """10개 코인 가격 예측 계약 탐색"""
         all_markets = []
         seen_ids = set()
 
-        # BTC/ETH 관련 태그만 검색 (무관한 시장 제외)
-        search_tags = ["crypto", "bitcoin", "ethereum", "btc", "eth", "cryptocurrency"]
+        search_tags = [
+            "crypto", "bitcoin", "ethereum", "solana", "bnb",
+            "ripple", "xrp", "avalanche", "chainlink", "polygon",
+            "polkadot", "dogecoin", "cryptocurrency",
+        ]
+        # 모든 키워드 플랫 목록
+        all_keywords = [kw for kws in self.SYMBOL_KEYWORDS.values() for kw in kws]
+
         for tag in search_tags:
             try:
                 markets = await self.client.get_markets(tag=tag)
                 for m in markets:
                     mid = m.get("conditionId") or m.get("id") or ""
                     if mid and mid not in seen_ids:
-                        # 1차 필터: BTC/ETH 관련 질문인지 확인
                         q = (m.get("question","") or m.get("title","")).lower()
-                        if any(k in q for k in ["btc","bitcoin","eth","ethereum"]):
+                        if any(k in q for k in all_keywords):
                             seen_ids.add(mid)
                             all_markets.append(m)
             except Exception as e:
                 logger.debug(f"[Scanner] 태그 '{tag}' 검색 오류: {e}")
 
-        logger.info(f"[Scanner] BTC/ETH 후보 시장 {len(all_markets)}개 발견, 계약 파싱 중...")
+        logger.info(f"[Scanner] 후보 시장 {len(all_markets)}개 발견, 계약 파싱 중...")
 
         found = 0
         for market in all_markets:
@@ -118,10 +137,7 @@ class MarketScanner:
                 )
 
         if self._scan_count % 5 == 0 or found > 0:
-            total = len(self.active_contracts)
-            btc = sum(1 for c in self.active_contracts.values() if c.symbol == "BTC")
-            eth = sum(1 for c in self.active_contracts.values() if c.symbol == "ETH")
-            logger.info(f"[Scanner] 활성 BTC/ETH 계약: 총 {total}개 (BTC: {btc}, ETH: {eth})")
+            logger.info(f"[Scanner] {self.summary()}")
 
     def _parse_market(self, market: Dict) -> Optional[MarketContract]:
         question = (
@@ -134,14 +150,14 @@ class MarketScanner:
 
         q_lower = question.lower()
 
-        # BTC 또는 ETH 관련 시장인지 확인
+        # 10개 코인 중 어느 것인지 확인
         symbol = None
-        if any(k in q_lower for k in ["btc", "bitcoin"]):
-            symbol = "BTC"
-        elif any(k in q_lower for k in ["eth", "ethereum"]):
-            symbol = "ETH"
-        else:
-            return None  # BTC/ETH 아닌 시장은 완전 제외
+        for sym, keywords in self.SYMBOL_KEYWORDS.items():
+            if any(k in q_lower for k in keywords):
+                symbol = sym
+                break
+        if symbol is None:
+            return None  # 대상 코인 아닌 시장은 제외
 
         # 가격 방향 확인
         # UP: YES = "가격이 X 이상/이상으로 오른다"
@@ -325,6 +341,8 @@ class MarketScanner:
 
     def summary(self) -> str:
         total = len(self.active_contracts)
-        btc = sum(1 for c in self.active_contracts.values() if c.symbol == "BTC")
-        eth = sum(1 for c in self.active_contracts.values() if c.symbol == "ETH")
-        return f"활성계약: {total}개 (BTC: {btc}, ETH: {eth})"
+        counts = {}
+        for c in self.active_contracts.values():
+            counts[c.symbol] = counts.get(c.symbol, 0) + 1
+        parts = ", ".join(f"{sym}:{cnt}" for sym, cnt in sorted(counts.items()))
+        return f"활성계약: {total}개 ({parts})"
