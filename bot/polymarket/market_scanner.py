@@ -137,14 +137,24 @@ class MarketScanner:
 
         logger.info(f"[Scanner] 후보 시장 {len(all_markets)}개 발견, 계약 파싱 중...")
 
-        # 샘플 로그: 첫 번째 시장이 어떻게 생겼는지 확인
-        if all_markets and self._scan_count == 0:
-            m = all_markets[0]
-            logger.info(f"[Scanner] 샘플 시장 필드: {list(m.keys())}")
-            logger.info(f"[Scanner] 샘플 질문: '{m.get('question', m.get('title', '?'))[:80]}'")
-
         found = 0
+        expired_count  = 0
+        too_long_count = 0
+        no_token_count = 0
+        no_price_count = 0
+
         for market in all_markets:
+            # 통계용 사전 체크
+            q = (market.get("question","") or market.get("title","")).lower()
+            end_time = self._parse_end_time(market)
+            if end_time:
+                rem_min = (end_time - time.time()) / 60
+                if rem_min < 1:
+                    expired_count += 1
+                    continue
+                if rem_min > 43200:
+                    too_long_count += 1
+
             contract = self._parse_market(market)
             if contract and contract.market_id not in self.active_contracts:
                 self.active_contracts[contract.market_id] = contract
@@ -157,8 +167,17 @@ class MarketScanner:
                     f"유동성: ${contract.liquidity_usd:,.0f}"
                 )
 
-        if self._scan_count % 5 == 0 or found > 0:
-            logger.info(f"[Scanner] {self.summary()}")
+        if self._scan_count % 3 == 0 or found > 0:
+            logger.info(
+                f"[Scanner] 스캔결과: 후보{len(all_markets)}개 | "
+                f"만료됨:{expired_count}개 | 기간초과:{too_long_count}개 | "
+                f"신규발견:{found}개 | 활성계약:{len(self.active_contracts)}개"
+            )
+            if expired_count > len(all_markets) * 0.8:
+                logger.warning(
+                    "[Scanner] ※ 후보 80% 이상이 만료된 계약임. "
+                    "현재 폴리마켓에 단기 크립토 계약이 없는 상태. SIM 모드로 거래 중."
+                )
 
     # 방향 키워드
     UP_KEYWORDS   = ["above", "higher", "over", "exceed", "reach", "hit", "rise",
