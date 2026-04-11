@@ -94,16 +94,64 @@ class HFTBot:
         self._next_daily_reset = self._calc_next_midnight()
 
     def _restore_capital(self) -> float:
-        """DB에서 마지막 자본 복원 (재시작 시 자본 유지)"""
+        """자본 복원 - 라이브 모드는 실제 CLOB 잔고, 페이퍼는 DB에서 복원"""
+        if self.live_mode:
+            return self._fetch_live_balance()
+        # 페이퍼 모드: DB에서 마지막 자본 복원
         try:
             recent = self.db.get_recent_trades(1)
-            if recent and recent[0].get("capital_after"):
-                capital = float(recent[0]["capital_after"])
-                if capital > 0:
-                    logger.info(f"[Bot] 자본 복원: ${capital:.2f}")
-                    return capital
+            if recent:
+                # 페이퍼 트레이드만 (SIM/PAPER 모드)
+                paper_trades = [t for t in recent if t.get("mode") in ("PAPER", "SIM")]
+                if paper_trades and paper_trades[0].get("capital_after"):
+                    capital = float(paper_trades[0]["capital_after"])
+                    if capital > 0:
+                        logger.info(f"[Bot] 페이퍼 자본 복원: ${capital:.2f}")
+                        return capital
         except Exception:
             pass
+        return config.INITIAL_SEED
+
+    def _fetch_live_balance(self) -> float:
+        """실제 폴리마켓 CLOB 잔고 조회"""
+        try:
+            from py_clob_client.client import ClobClient
+            from py_clob_client.clob_types import ApiCreds
+            from py_clob_client.constants import POLYGON
+
+            client = ClobClient(
+                host=config.POLYMARKET_CLOB_URL,
+                chain_id=POLYGON,
+                key=config.POLYGON_PRIVATE_KEY,
+                creds=ApiCreds(
+                    api_key=config.POLYMARKET_API_KEY,
+                    api_secret=config.POLYMARKET_API_SECRET,
+                    api_passphrase=config.POLYMARKET_API_PASSPHRASE,
+                ),
+                signature_type=0,
+            )
+            balance_info = client.get_balance()
+            # 응답 형식: {"balance": "107.05"} 또는 숫자
+            if isinstance(balance_info, dict):
+                balance = float(balance_info.get("balance", 0))
+            else:
+                balance = float(balance_info)
+            if balance > 0:
+                logger.info(f"[Bot] 실계좌 잔고 조회: ${balance:.2f}")
+                return balance
+        except Exception as e:
+            logger.warning(f"[Bot] 잔고 조회 실패: {e} → DB에서 복원 시도")
+            # 폴백: DB에서 마지막 라이브 거래 잔고
+            try:
+                recent = self.db.get_recent_trades(1)
+                if recent:
+                    live_trades = [t for t in recent if t.get("mode") == "REAL"]
+                    if live_trades and live_trades[0].get("capital_after"):
+                        capital = float(live_trades[0]["capital_after"])
+                        if capital > 0:
+                            return capital
+            except Exception:
+                pass
         return config.INITIAL_SEED
 
     # ─────────────────────────────────────────
@@ -112,13 +160,16 @@ class HFTBot:
     async def run(self):
         logger.info("[Bot] 봇 시작")
         async with self.poly_client:
-            await asyncio.gather(
+            tasks = [
                 self._price_feed_loop(),
                 self._scanner_loop(),
                 self._dashboard_loop(),
                 self._daily_reset_loop(),
                 self._db_save_loop(),
-            )
+            ]
+            if self.live_mode:
+                tasks.append(self._live_balance_sync_loop())
+            await asyncio.gather(*tasks)
 
     async def _price_feed_loop(self):
         feed = BinanceFeed(on_price_update=self._on_price_update)
@@ -318,6 +369,20 @@ class HFTBot:
                 self._next_daily_reset = self._calc_next_midnight()
                 logger.info(f"[Bot] 일별 리셋 | 자본: ${capital:.2f}")
             await asyncio.sleep(60)
+
+    async def _live_balance_sync_loop(self):
+        """라이브 모드: 60초마다 실제 CLOB 잔고와 동기화"""
+        while True:
+            await asyncio.sleep(60)
+            try:
+                real_balance = self._fetch_live_balance()
+                if real_balance > 0:
+                    # 오픈 포지션 없을 때만 동기화 (포지션 중엔 잠금자본 있음)
+                    if len(self.paper_engine.open_positions) == 0:
+                        self.paper_engine.capital = real_balance
+                        logger.info(f"[Bot] 실계좌 잔고 동기화: ${real_balance:.2f}")
+            except Exception as e:
+                logger.debug(f"[Bot] 잔고 동기화 오류: {e}")
 
     def _calc_next_midnight(self) -> float:
         tomorrow = datetime.now().replace(
