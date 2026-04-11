@@ -109,6 +109,20 @@ class MarketScanner:
         all_markets = []
         seen_ids = set()
 
+        # 방법 0: 슬러그 직접 조회 (최우선 - 5분/1시간 Up-Down 계약)
+        # GET /events/slug/{coin}-updown-{timeframe}-{timestamp}
+        try:
+            slug_markets = await self.client.get_updown_markets()
+            for m in slug_markets:
+                mid = m.get("conditionId") or m.get("id") or ""
+                if mid and mid not in seen_ids:
+                    seen_ids.add(mid)
+                    all_markets.append(m)
+            if slug_markets:
+                logger.info(f"[Scanner] 슬러그 직접 조회: {len(slug_markets)}개 발견")
+        except Exception as e:
+            logger.error(f"[Scanner] 슬러그 조회 오류: {e}")
+
         # 방법 1: get_all_crypto_markets (페이지네이션 + 검색어)
         try:
             markets = await self.client.get_all_crypto_markets()

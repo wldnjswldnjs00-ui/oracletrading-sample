@@ -211,6 +211,72 @@ class PolymarketClient:
 
         return results
 
+    async def get_event_by_slug(self, slug: str) -> Optional[Dict]:
+        """
+        슬러그로 이벤트 조회 (정답 URL: GET /events/slug/{slug})
+        예: btc-updown-5m-1748835000
+        """
+        session = await self.get_session()
+        url = f"{config.POLYMARKET_GAMMA_URL}/events/slug/{slug}"
+        try:
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                elif resp.status == 404:
+                    return None
+                else:
+                    logger.debug(f"[API] get_event_by_slug HTTP {resp.status} ({slug})")
+                    return None
+        except Exception as e:
+            logger.debug(f"[API] get_event_by_slug 오류 ({slug}): {e}")
+            return None
+
+    async def get_updown_markets(self) -> List[Dict]:
+        """
+        BTC/ETH/SOL/XRP 5분/1시간 Up-Down 계약을 슬러그로 직접 조회
+        슬러그 패턴: {coin}-updown-{timeframe}-{round_start}
+        round_start = (now // interval_sec) * interval_sec
+        """
+        session = await self.get_session()
+        results = []
+        seen_ids = set()
+        now = int(time.time())
+
+        # 코인 × 타임프레임 × 현재/이전/다음 라운드
+        coins = ["btc", "eth", "sol", "xrp", "bnb", "doge"]
+        timeframes = [
+            ("5m",  300),
+            ("1h",  3600),
+            ("24h", 86400),
+        ]
+
+        slugs_to_try = []
+        for coin in coins:
+            for tf_label, tf_sec in timeframes:
+                round_start = (now // tf_sec) * tf_sec
+                for offset in [-1, 0, 1, 2]:   # 이전/현재/다음/그다음 라운드
+                    ts = round_start + offset * tf_sec
+                    slugs_to_try.append(f"{coin}-updown-{tf_label}-{ts}")
+
+        logger.info(f"[API] 슬러그 직접 조회: {len(slugs_to_try)}개 시도")
+        found = 0
+
+        for slug in slugs_to_try:
+            event = await self.get_event_by_slug(slug)
+            if event:
+                for m in event.get("markets", []):
+                    mid = m.get("conditionId") or m.get("id") or ""
+                    if mid and mid not in seen_ids:
+                        seen_ids.add(mid)
+                        results.append(m)
+                        found += 1
+                        logger.info(f"[API] ✓ 슬러그 발견: {slug}")
+            await asyncio.sleep(0.05)
+
+        if found:
+            logger.info(f"[API] 슬러그 직접 조회 완료: {found}개 계약 발견")
+        return results
+
     async def _get_clob_markets(self) -> List[Dict]:
         """CLOB API에서 활성 시장 조회 (페이지네이션)"""
         session = await self.get_session()
