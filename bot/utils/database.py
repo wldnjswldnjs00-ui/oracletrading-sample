@@ -101,10 +101,11 @@ class TradeDB:
             conn.commit()
 
     def get_recent_trades(self, limit: int = 20) -> List[Dict]:
-        """최근 거래 내역 조회"""
+        """최근 청산 거래 내역 조회 (CLOSED만)"""
         with self._get_conn() as conn:
             rows = conn.execute("""
                 SELECT * FROM trades
+                WHERE status = 'CLOSED'
                 ORDER BY entry_time DESC
                 LIMIT ?
             """, (limit,)).fetchall()

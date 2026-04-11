@@ -132,18 +132,23 @@ def make_recent_trades_panel(trades: list) -> Panel:
     table.add_column("사유",     width=12)
 
     for t in trades[:12]:
-        pnl = t.get("pnl", 0) or 0
+        if t.get("status") == "OPEN":
+            continue  # 미청산 거래는 표시 제외
+        pnl       = t.get("pnl") or 0
+        entry_odds = t.get("entry_odds") or 0
+        exit_odds  = t.get("exit_odds") or 0
+        hold_sec   = t.get("hold_sec") or 0
         pnl_color = "green" if pnl >= 0 else "red"
         direction_color = "green" if t.get("direction") == "UP" else "red"
         table.add_row(
-            t.get("trade_id", "")[-6:],
+            (t.get("trade_id") or "")[-6:],
             t.get("symbol", ""),
             f"[{direction_color}]{t.get('direction', '')}[/]",
-            f"{t.get('entry_odds', 0):.3f}",
-            f"{t.get('exit_odds', 0):.3f}",
+            f"{entry_odds:.3f}",
+            f"{exit_odds:.3f}",
             f"[{pnl_color}]{pnl:+.4f}$[/]",
-            f"{t.get('hold_sec', 0):.1f}",
-            t.get("exit_reason", ""),
+            f"{hold_sec:.1f}",
+            t.get("exit_reason") or "",
         )
 
     return Panel(table, title="[bold]📋 최근 거래[/]", border_style="blue")
