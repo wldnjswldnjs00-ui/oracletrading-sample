@@ -254,12 +254,13 @@ class PaperEngine:
                 )
                 break
 
-            # ④ 계약 만기 (폴리마켓 해결)
+            # ④ 계약 만기
             if not contract.is_active:
-                # 만기 시 YES = 1.0, NO = 0.0 으로 해결
-                resolution_odds = 1.0 if position.direction == "UP" else 0.0
+                # 시뮬/페이퍼: 현재 오즈로 청산 (바이너리 해결 강제 적용 금지)
+                # 실폴리마켓 실거래 시에는 실제 해결 결과 API로 확인 필요
+                current_odds = contract.target_odds(position.direction)
                 await self._close_position(
-                    position, resolution_odds, reason="RESOLUTION"
+                    position, current_odds, reason="RESOLUTION"
                 )
                 break
 
