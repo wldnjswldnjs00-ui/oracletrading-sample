@@ -131,31 +131,23 @@ class HFTBot:
                 signature_type=0,
             )
 
-            # 방법 1: get_balance() 직접 호출
+            # 정답 메서드: get_balance_allowance(asset_type=COLLATERAL)
             try:
-                raw = client.get_balance()
+                from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
+                params = BalanceAllowanceParams(asset_type=AssetType.COLLATERAL)
+                raw = client.get_balance_allowance(params)
                 if raw is not None:
-                    balance = float(raw) if not isinstance(raw, dict) else float(
-                        raw.get("balance", raw.get("USDC", raw.get("usdc", 0)))
-                    )
+                    # 응답: {"balance": "107050000", "allowance": "...", "asset_type": "COLLATERAL"}
+                    # balance는 6자리 소수 (USDC = 1e6 단위)
+                    bal_raw = raw.get("balance", 0) if isinstance(raw, dict) else raw
+                    balance = float(bal_raw) / 1_000_000  # 마이크로 USDC → USDC
+                    if balance <= 0:
+                        balance = float(bal_raw)  # 이미 달러 단위면 그대로
                     if balance > 0:
                         logger.info(f"[Bot] 실계좌 잔고: ${balance:.2f}")
                         return balance
             except Exception as e1:
-                logger.debug(f"[Bot] get_balance() 실패: {e1}")
-
-            # 방법 2: get_collateral_balance() 시도
-            try:
-                raw = client.get_collateral_balance()
-                if raw is not None:
-                    balance = float(raw) if not isinstance(raw, dict) else float(
-                        raw.get("balance", raw.get("USDC", 0))
-                    )
-                    if balance > 0:
-                        logger.info(f"[Bot] 실계좌 잔고(collateral): ${balance:.2f}")
-                        return balance
-            except Exception as e2:
-                logger.debug(f"[Bot] get_collateral_balance() 실패: {e2}")
+                logger.debug(f"[Bot] get_balance_allowance() 실패: {e1}")
 
         except Exception as e:
             logger.warning(f"[Bot] CLOB 클라이언트 초기화 실패: {e}")
