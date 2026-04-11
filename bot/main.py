@@ -42,6 +42,14 @@ from utils.database import TradeDB
 from utils.dashboard import Dashboard
 
 
+def _create_engine(live_mode: bool, capital: float):
+    """모드에 따라 적절한 실행 엔진 생성"""
+    if live_mode:
+        from execution.live_engine import LiveEngine
+        return LiveEngine(capital)
+    return PaperEngine(capital)
+
+
 class HFTBot:
     """
     라텐시 아비트라지 고빈도 매매 봇
@@ -67,7 +75,7 @@ class HFTBot:
         self.signal_engine = SignalEngine()
         self.db            = TradeDB()
         restored_capital   = self._restore_capital()
-        self.paper_engine  = PaperEngine(restored_capital)
+        self.paper_engine  = _create_engine(live_mode, restored_capital)
         self.risk_manager  = RiskManager(on_halt=self._on_halt)
         self.dashboard     = Dashboard(mode=mode_str)
 
@@ -133,8 +141,9 @@ class HFTBot:
         self._price_info[symbol] = price
         self._price_info[f"{symbol}_chg"] = change_pct
 
-        # 시뮬레이터에 실시간 가격 전달 (오즈 계산에 사용)
-        self.sim_scanner.update_price(symbol, price, timestamp)
+        # 시뮬레이터에 실시간 가격 전달 (페이퍼 모드에서 오즈 계산용)
+        if not self.live_mode:
+            self.sim_scanner.update_price(symbol, price, timestamp)
 
         # 리스크 체크
         can_trade, reason = self.risk_manager.can_trade()
@@ -151,10 +160,15 @@ class HFTBot:
         contract = self.scanner.get_best_contract(symbol, direction)
         is_sim = False
 
-        # ② 실계약 없거나 유동성 부족 → 시뮬레이션 계약으로 폴백
-        if not contract or contract.liquidity_usd < config.MIN_MARKET_LIQUIDITY_USD:
-            contract = self.sim_scanner.get_best_contract(symbol, direction)
-            is_sim = True
+        if self.live_mode:
+            # 실거래: 실계약만 사용 (시뮬 폴백 없음)
+            if not contract or contract.liquidity_usd < config.MIN_MARKET_LIQUIDITY_USD:
+                return
+        else:
+            # 페이퍼: 실계약 없으면 시뮬로 폴백
+            if not contract or contract.liquidity_usd < config.MIN_MARKET_LIQUIDITY_USD:
+                contract = self.sim_scanner.get_best_contract(symbol, direction)
+                is_sim = True
 
         if not contract:
             return
