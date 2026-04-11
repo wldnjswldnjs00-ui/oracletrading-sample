@@ -107,9 +107,9 @@ class PaperEngine:
 
     @property
     def total_equity(self) -> float:
-        """총 자산 = 가용 자본 + 미실현 손익"""
+        """총 자산 = 가용 자본 + 포지션 잠금 자본 + 미실현 손익"""
         unrealized = sum(p.unrealized_pnl for p in self.open_positions.values())
-        return self.capital + unrealized
+        return self.capital + self._locked_capital + unrealized
 
     def _calculate_position_size(self, contract: MarketContract) -> float:
         """
