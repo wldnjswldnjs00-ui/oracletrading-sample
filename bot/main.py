@@ -13,14 +13,12 @@ import time
 import argparse
 from datetime import datetime, timedelta
 
-# Rich 로깅 설정
-from rich.logging import RichHandler
+# 로그는 파일로만 (대시보드 화면 오염 방지)
 logging.basicConfig(
     level=logging.INFO,
-    format="%(message)s",
-    datefmt="[%X]",
+    format="[%(asctime)s] %(levelname)-8s %(message)s",
+    datefmt="%H:%M:%S",
     handlers=[
-        RichHandler(rich_tracebacks=True, markup=True),
         logging.FileHandler("bot.log", encoding="utf-8"),
     ]
 )
@@ -61,9 +59,11 @@ class HFTBot:
         self.sim_scanner   = SimulatedMarketScanner()   # 항상 활성: 실계약 유동성 부족 시 폴백
         self.sim_scanner.enable()                        # 시작부터 시뮬레이션 활성화
         self.signal_engine = SignalEngine()
-        self.paper_engine  = PaperEngine(config.INITIAL_SEED)
-        self.risk_manager  = RiskManager(on_halt=self._on_halt)
         self.db            = TradeDB()
+        # DB에서 마지막 자본 복원 (껐다 켜도 자본 유지)
+        restored_capital   = self._restore_capital()
+        self.paper_engine  = PaperEngine(restored_capital)
+        self.risk_manager  = RiskManager(on_halt=self._on_halt)
         self.dashboard     = Dashboard(mode=mode_str)
 
         # 가격 정보 (대시보드 표시용)
@@ -76,6 +76,19 @@ class HFTBot:
         self._start_time = time.time()
         self._signals_generated = 0
         self._signals_skipped_risk = 0
+
+    def _restore_capital(self) -> float:
+        """DB에서 마지막 자본 복원 (재시작 시 자본 유지)"""
+        try:
+            recent = self.db.get_recent_trades(1)
+            if recent and recent[0].get("capital_after"):
+                capital = float(recent[0]["capital_after"])
+                if capital > 0:
+                    logger.info(f"[Bot] 자본 복원: ${capital:.2f}")
+                    return capital
+        except Exception:
+            pass
+        return config.INITIAL_SEED
 
     # ─────────────────────────────────────────
     # 메인 실행
@@ -204,9 +217,16 @@ class HFTBot:
                     real_summary = self.scanner.summary()
                     sim_summary  = self.sim_scanner.summary()
                     scanner_summary = f"{real_summary} | {sim_summary}"
+                    engine_stats = self.paper_engine.get_stats()
+                    # DB 누적 통계로 덮어쓰기 (재시작해도 누적 표시)
+                    db_stats = self.db.get_total_stats()
+                    if db_stats and db_stats.get("total_trades", 0) > 0:
+                        engine_stats["total_trades"] = db_stats["total_trades"]
+                        engine_stats["win_rate"]     = db_stats["win_rate"]
+                        engine_stats["total_pnl"]    = db_stats.get("total_pnl") or 0
                     self.dashboard.update(
                         layout=layout,
-                        engine_stats=self.paper_engine.get_stats(),
+                        engine_stats=engine_stats,
                         risk_stats=self.risk_manager.get_stats(),
                         recent_trades=recent,
                         scanner_summary=scanner_summary,
