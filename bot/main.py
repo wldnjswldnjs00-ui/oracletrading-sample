@@ -113,44 +113,52 @@ class HFTBot:
         return config.INITIAL_SEED
 
     def _fetch_live_balance(self) -> float:
-        """실제 폴리마켓 CLOB 잔고 조회"""
-        import requests
-        import hmac
-        import hashlib
-        import base64
-        from datetime import datetime, timezone
-
+        """실제 폴리마켓 CLOB 잔고 조회 (py-clob-client 사용)"""
         try:
-            ts = str(int(datetime.now(timezone.utc).timestamp()))
-            msg = ts + "GET" + "/balance"
-            secret_bytes = base64.b64decode(config.POLYMARKET_API_SECRET)
-            sig = hmac.new(secret_bytes, msg.encode(), hashlib.sha256).digest()
-            sig_b64 = base64.b64encode(sig).decode()
+            from py_clob_client.client import ClobClient
+            from py_clob_client.clob_types import ApiCreds
+            from py_clob_client.constants import POLYGON
 
-            headers = {
-                "POLY-API-KEY": config.POLYMARKET_API_KEY,
-                "POLY-SIGNATURE": sig_b64,
-                "POLY-TIMESTAMP": ts,
-                "POLY-PASSPHRASE": config.POLYMARKET_API_PASSPHRASE,
-            }
-            resp = requests.get(
-                f"{config.POLYMARKET_CLOB_URL}/balance",
-                headers=headers,
-                timeout=5,
+            client = ClobClient(
+                host=config.POLYMARKET_CLOB_URL,
+                chain_id=POLYGON,
+                key=config.POLYGON_PRIVATE_KEY,
+                creds=ApiCreds(
+                    api_key=config.POLYMARKET_API_KEY,
+                    api_secret=config.POLYMARKET_API_SECRET,
+                    api_passphrase=config.POLYMARKET_API_PASSPHRASE,
+                ),
+                signature_type=0,
             )
-            if resp.status_code == 200:
-                data = resp.json()
-                if isinstance(data, dict):
-                    balance = float(data.get("balance", data.get("USDC", 0)))
-                else:
-                    balance = float(data)
-                if balance > 0:
-                    logger.info(f"[Bot] 실계좌 잔고: ${balance:.2f}")
-                    return balance
-            else:
-                logger.warning(f"[Bot] 잔고 조회 HTTP {resp.status_code}: {resp.text[:100]}")
+
+            # 방법 1: get_balance() 직접 호출
+            try:
+                raw = client.get_balance()
+                if raw is not None:
+                    balance = float(raw) if not isinstance(raw, dict) else float(
+                        raw.get("balance", raw.get("USDC", raw.get("usdc", 0)))
+                    )
+                    if balance > 0:
+                        logger.info(f"[Bot] 실계좌 잔고: ${balance:.2f}")
+                        return balance
+            except Exception as e1:
+                logger.debug(f"[Bot] get_balance() 실패: {e1}")
+
+            # 방법 2: get_collateral_balance() 시도
+            try:
+                raw = client.get_collateral_balance()
+                if raw is not None:
+                    balance = float(raw) if not isinstance(raw, dict) else float(
+                        raw.get("balance", raw.get("USDC", 0))
+                    )
+                    if balance > 0:
+                        logger.info(f"[Bot] 실계좌 잔고(collateral): ${balance:.2f}")
+                        return balance
+            except Exception as e2:
+                logger.debug(f"[Bot] get_collateral_balance() 실패: {e2}")
+
         except Exception as e:
-            logger.warning(f"[Bot] 잔고 조회 실패: {e}")
+            logger.warning(f"[Bot] CLOB 클라이언트 초기화 실패: {e}")
 
         # 폴백: DB에서 마지막 라이브 거래 잔고
         try:
@@ -164,7 +172,7 @@ class HFTBot:
         except Exception:
             pass
 
-        logger.warning("[Bot] 잔고 조회 실패 → $100 사용. 실제 잔고와 다를 수 있음")
+        logger.warning("[Bot] 잔고 조회 실패 → config.INITIAL_SEED 사용")
         return config.INITIAL_SEED
 
     # ─────────────────────────────────────────

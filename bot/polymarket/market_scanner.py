@@ -100,7 +100,7 @@ class MarketScanner:
         all_markets = []
         seen_ids = set()
 
-        # 방법 1: get_all_crypto_markets (여러 쿼리 조합)
+        # 방법 1: get_all_crypto_markets (페이지네이션 + 검색어)
         try:
             markets = await self.client.get_all_crypto_markets()
             for m in markets:
@@ -128,6 +128,12 @@ class MarketScanner:
 
         logger.info(f"[Scanner] 후보 시장 {len(all_markets)}개 발견, 계약 파싱 중...")
 
+        # 샘플 로그: 첫 번째 시장이 어떻게 생겼는지 확인
+        if all_markets and self._scan_count == 0:
+            m = all_markets[0]
+            logger.info(f"[Scanner] 샘플 시장 필드: {list(m.keys())}")
+            logger.info(f"[Scanner] 샘플 질문: '{m.get('question', m.get('title', '?'))[:80]}'")
+
         found = 0
         for market in all_markets:
             contract = self._parse_market(market)
@@ -144,6 +150,12 @@ class MarketScanner:
 
         if self._scan_count % 5 == 0 or found > 0:
             logger.info(f"[Scanner] {self.summary()}")
+
+    # 방향 키워드
+    UP_KEYWORDS   = ["above", "higher", "over", "exceed", "reach", "hit", "rise",
+                     "up", "bull", "break", "surpass", "top", "high"]
+    DOWN_KEYWORDS = ["below", "lower", "under", "drop", "fall", "crash",
+                     "down", "bear", "decline", "dip"]
 
     def _parse_market(self, market: Dict) -> Optional[MarketContract]:
         question = (
@@ -166,15 +178,8 @@ class MarketScanner:
             return None  # 대상 코인 아닌 시장은 제외
 
         # 가격 방향 확인
-        # UP: YES = "가격이 X 이상/이상으로 오른다"
-        up_keywords   = ["above", "higher", "over", "exceed", "reach", "hit", "rise",
-                         "up", "bull", "break", "surpass", "top", "high"]
-        down_keywords = ["below", "lower", "under", "drop", "fall", "crash",
-                         "down", "bear", "decline", "dip", "below"]
-
-        direction = None
-        up_score   = sum(1 for k in up_keywords   if k in q_lower)
-        down_score = sum(1 for k in down_keywords if k in q_lower)
+        up_score   = sum(1 for k in self.UP_KEYWORDS   if k in q_lower)
+        down_score = sum(1 for k in self.DOWN_KEYWORDS if k in q_lower)
 
         if up_score > down_score:
             direction = "UP"
@@ -183,11 +188,13 @@ class MarketScanner:
         elif up_score > 0:
             direction = "UP"   # 동점이면 UP으로 처리
         else:
-            return None  # 방향 불명확 시 제외
+            # 방향 불명확 → 가격 예측 계약이면 UP으로 처리
+            direction = "UP"
 
         # 만기 시간 파싱
         end_time = self._parse_end_time(market)
         if not end_time:
+            logger.debug(f"[Scanner] 만기 파싱 실패: '{question[:50]}'")
             return None
 
         # 남은 시간 계산
@@ -198,13 +205,14 @@ class MarketScanner:
         if duration_min < 1:
             return None
 
-        # 7일(10080분) 초과는 가격 변동 영향이 너무 작아 제외
-        if duration_min > 10080:
+        # 30일(43200분) 초과는 가격 변동 영향이 너무 작아 제외
+        if duration_min > 43200:
             return None
 
         # 토큰 ID 추출
         yes_token, no_token = self._extract_tokens(market)
         if not yes_token or not no_token:
+            logger.debug(f"[Scanner] 토큰 추출 실패: '{question[:50]}'")
             return None
 
         market_id = market.get("conditionId") or market.get("id") or ""
