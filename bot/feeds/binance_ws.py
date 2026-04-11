@@ -75,7 +75,7 @@ class BinanceFeed:
         self._symbol_map: Dict[str, str] = {
             "BTCUSDT": "BTC",  "ETHUSDT": "ETH",  "SOLUSDT": "SOL",
             "BNBUSDT": "BNB",  "XRPUSDT": "XRP",  "AVAXUSDT": "AVAX",
-            "LINKUSDT": "LINK","MATICUSDT":"MATIC","DOTUSDT": "DOT",
+            "LINKUSDT": "LINK","POLUSDT":  "POL", "DOTUSDT": "DOT",
             "DOGEUSDT": "DOGE",
         }
         self._running = False

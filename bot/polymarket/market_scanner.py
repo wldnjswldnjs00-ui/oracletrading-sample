@@ -90,7 +90,7 @@ class MarketScanner:
         "XRP":  ["xrp", "ripple"],
         "AVAX": ["avax", "avalanche"],
         "LINK": ["link", "chainlink"],
-        "MATIC":["matic", "polygon"],
+        "POL":  ["pol", "matic", "polygon"],
         "DOT":  ["dot", "polkadot"],
         "DOGE": ["doge", "dogecoin"],
     }

@@ -45,7 +45,7 @@ FILL_SPEED_THRESHOLD_SEC = 0.5      # 풀시드 주문 0.5초 내 체결 = 유�
 # ─────────────────────────────────────────
 # 대상 시장 (10개 코인 동시 운용)
 # ─────────────────────────────────────────
-TARGET_SYMBOLS = ["BTC", "ETH", "SOL", "BNB", "XRP", "AVAX", "LINK", "MATIC", "DOT", "DOGE"]
+TARGET_SYMBOLS = ["BTC", "ETH", "SOL", "BNB", "XRP", "AVAX", "LINK", "POL", "DOT", "DOGE"]
 MAX_OPEN_POSITIONS = len(TARGET_SYMBOLS)   # 심볼당 1개 = 최대 10개 동시 포지션
 TARGET_DURATIONS = [5, 15, 60, 240, 1440]  # 분 단위 (5분~1일 계약 전부)
 
@@ -61,7 +61,7 @@ BINANCE_STREAMS = [
     "xrpusdt@trade",
     "avaxusdt@trade",
     "linkusdt@trade",
-    "maticusdt@trade",
+    "polusdt@trade",
     "dotusdt@trade",
     "dogeusdt@trade",
 ]
