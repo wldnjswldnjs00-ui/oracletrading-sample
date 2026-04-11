@@ -58,7 +58,8 @@ class HFTBot:
         # 컴포넌트 초기화
         self.poly_client   = PolymarketClient()
         self.scanner       = MarketScanner(self.poly_client)
-        self.sim_scanner   = SimulatedMarketScanner()   # 실계약 없을 때 폴백
+        self.sim_scanner   = SimulatedMarketScanner()   # 항상 활성: 실계약 유동성 부족 시 폴백
+        self.sim_scanner.enable()                        # 시작부터 시뮬레이션 활성화
         self.signal_engine = SignalEngine()
         self.paper_engine  = PaperEngine(config.INITIAL_SEED)
         self.risk_manager  = RiskManager(on_halt=self._on_halt)
@@ -75,7 +76,6 @@ class HFTBot:
         self._start_time = time.time()
         self._signals_generated = 0
         self._signals_skipped_risk = 0
-        self._no_contract_count = 0   # 계약 없어서 스킵된 횟수
 
     # ─────────────────────────────────────────
     # 메인 실행
@@ -139,13 +139,11 @@ class HFTBot:
         # ① 실폴리마켓 계약 조회 (BTC/ETH 전용)
         contract = self.scanner.get_best_contract(symbol, direction)
 
-        # ② 실계약 없으면 시뮬레이션 계약 사용
-        if not contract:
-            self._no_contract_count += 1
-            # 일정 횟수 이상 실계약 없으면 시뮬레이션 활성화
-            if self._no_contract_count > 100:
-                self.sim_scanner.enable()
-            contract = self.sim_scanner.get_best_contract(symbol, direction)
+        # ② 실계약 없거나 유동성 부족 → 시뮬레이션 계약으로 폴백
+        if not contract or contract.liquidity_usd < config.MIN_MARKET_LIQUIDITY_USD:
+            sim_contract = self.sim_scanner.get_best_contract(symbol, direction)
+            if sim_contract:
+                contract = sim_contract
 
         # 신호 생성
         signal = self.signal_engine.generate_signal(

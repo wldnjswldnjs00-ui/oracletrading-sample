@@ -82,10 +82,10 @@ class LaggingOddsModel:
             return 0.50
 
         change_pct = (price - self._anchor_price) / self._anchor_price * 100
-        # 시그모이드 함수로 변환 (k값이 클수록 민감도 높음)
-        k = 5.0  # 5분 계약 민감도
-        prob = 1 / (1 + math.exp(-k * change_pct / 100))
-        # 0.05 ~ 0.95 범위로 클램핑
+        # k=0.5: 캘리브레이션 테이블보다 보수적으로 설정 → 항상 양의 갭 확보
+        # (calibration 0.3%→62% > sigmoid(0.5×0.3)=54% → gap=8%p)
+        k = 0.5
+        prob = 1 / (1 + math.exp(-k * change_pct))
         return max(0.05, min(0.95, prob))
 
     @property
@@ -105,7 +105,7 @@ class SimulatedMarketScanner:
     """
 
     CONTRACT_DURATION_MIN = 5   # 5분 계약
-    CONTRACT_REFRESH_SEC  = 300  # 5분마다 새 계약 생성
+    CONTRACT_REFRESH_SEC  = 15   # 15초마다 앵커 갱신 (캘리브레이션 갭 유지)
 
     def __init__(self):
         self._contracts: Dict[str, object] = {}  # MarketContract 호환 오브젝트
