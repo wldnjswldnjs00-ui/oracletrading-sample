@@ -221,6 +221,7 @@ class HFTBot:
     # ─────────────────────────────────────────
     async def _db_save_loop(self):
         """5초마다 청산된 포지션 DB 업데이트"""
+        _reported_ids: set = set()  # 중복 보고 방지
         while True:
             await asyncio.sleep(5)
             try:
@@ -242,14 +243,17 @@ class HFTBot:
                             "exit_time":      pos.exit_time,
                             "gap_pct_points": None,
                             "implied_prob":   None,
-                            "capital_after":  self.paper_engine.capital,
+                            "capital_after":  self.paper_engine.total_equity,
                             "mode":           "PAPER",
                         })
-                        # 리스크 매니저에 결과 보고
-                        self.risk_manager.report_trade(
-                            pnl=pos.pnl,
-                            capital=self.paper_engine.capital,
-                        )
+                        # 리스크 매니저에 결과 보고 (중복 방지 + total_equity 사용)
+                        # capital 대신 total_equity: 포지션 잠금 중에도 $0로 오인 방지
+                        if pos.trade_id not in _reported_ids:
+                            _reported_ids.add(pos.trade_id)
+                            self.risk_manager.report_trade(
+                                pnl=pos.pnl,
+                                capital=self.paper_engine.total_equity,
+                            )
             except Exception as e:
                 logger.debug(f"[DB] 저장 오류: {e}")
 
