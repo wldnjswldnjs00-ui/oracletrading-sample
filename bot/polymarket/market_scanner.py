@@ -96,19 +96,24 @@ class MarketScanner:
     }
 
     async def _discover_markets(self):
-        """10개 코인 가격 예측 계약 탐색"""
+        """10개 코인 가격 예측 계약 탐색 - 모든 방법 동원"""
         all_markets = []
         seen_ids = set()
 
-        search_tags = [
-            "crypto", "bitcoin", "ethereum", "solana", "bnb",
-            "ripple", "xrp", "avalanche", "chainlink", "polygon",
-            "polkadot", "dogecoin", "cryptocurrency",
-        ]
-        # 모든 키워드 플랫 목록
-        all_keywords = [kw for kws in self.SYMBOL_KEYWORDS.values() for kw in kws]
+        # 방법 1: get_all_crypto_markets (여러 쿼리 조합)
+        try:
+            markets = await self.client.get_all_crypto_markets()
+            for m in markets:
+                mid = m.get("conditionId") or m.get("id") or ""
+                if mid and mid not in seen_ids:
+                    seen_ids.add(mid)
+                    all_markets.append(m)
+        except Exception as e:
+            logger.error(f"[Scanner] 전체 크립토 시장 조회 오류: {e}")
 
-        for tag in search_tags:
+        # 방법 2: 기존 태그 검색 (백업)
+        all_keywords = [kw for kws in self.SYMBOL_KEYWORDS.values() for kw in kws]
+        for tag in ["crypto", "bitcoin", "ethereum", "solana", "cryptocurrency"]:
             try:
                 markets = await self.client.get_markets(tag=tag)
                 for m in markets:
@@ -133,7 +138,8 @@ class MarketScanner:
                 logger.info(
                     f"[Scanner] ✓ {contract.symbol} {contract.direction} 계약 발견: "
                     f"'{contract.question[:50]}' | "
-                    f"만기: {remaining_h:.1f}시간 후"
+                    f"만기: {remaining_h:.1f}시간 후 | "
+                    f"유동성: ${contract.liquidity_usd:,.0f}"
                 )
 
         if self._scan_count % 5 == 0 or found > 0:

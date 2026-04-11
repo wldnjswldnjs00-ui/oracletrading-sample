@@ -15,8 +15,7 @@ import config
 
 logger = logging.getLogger(__name__)
 
-# 타임아웃 설정
-TIMEOUT = aiohttp.ClientTimeout(total=5)
+TIMEOUT = aiohttp.ClientTimeout(total=10)
 
 
 class PolymarketClient:
@@ -39,42 +38,168 @@ class PolymarketClient:
         return self._session
 
     # ─────────────────────────────────────────
-    # 시장 목록 조회
+    # 시장 목록 조회 (여러 방법 시도)
     # ─────────────────────────────────────────
     async def get_markets(self, tag: str = "crypto") -> List[Dict]:
-        """
-        활성 예측 시장 목록 조회
-        tag: 필터 태그 ('crypto', 'bitcoin', 'ethereum' 등)
-        """
+        """활성 예측 시장 목록 조회 - 여러 파라미터 조합 시도"""
+        results = []
+        seen_ids = set()
+
         session = await self.get_session()
-        url = f"{config.POLYMARKET_GAMMA_URL}/markets"
-        params = {
-            "active": "true",
-            "closed": "false",
-            "tag": tag,
-            "limit": 100,
-        }
+
+        # 방법 1: tag_slug 파라미터 (폴리마켓 실제 태그 슬러그)
+        for param_name in ["tag_slug", "tag", "tags"]:
+            try:
+                url = f"{config.POLYMARKET_GAMMA_URL}/markets"
+                params = {
+                    "active": "true",
+                    "closed": "false",
+                    param_name: tag,
+                    "limit": 100,
+                }
+                async with session.get(url, params=params) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        markets = data if isinstance(data, list) else data.get("markets", [])
+                        for m in markets:
+                            mid = m.get("conditionId") or m.get("id") or ""
+                            if mid and mid not in seen_ids:
+                                seen_ids.add(mid)
+                                results.append(m)
+            except Exception as e:
+                logger.debug(f"[API] {param_name}={tag} 조회 오류: {e}")
+
+        # 방법 2: 검색어로 직접 조회
         try:
+            url = f"{config.POLYMARKET_GAMMA_URL}/markets"
+            params = {
+                "active": "true",
+                "closed": "false",
+                "search": tag,
+                "limit": 100,
+            }
             async with session.get(url, params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    return data if isinstance(data, list) else data.get("markets", [])
-                else:
-                    logger.warning(f"[Polymarket] 시장 목록 오류: HTTP {resp.status}")
-                    return []
+                    markets = data if isinstance(data, list) else data.get("markets", [])
+                    for m in markets:
+                        mid = m.get("conditionId") or m.get("id") or ""
+                        if mid and mid not in seen_ids:
+                            seen_ids.add(mid)
+                            results.append(m)
         except Exception as e:
-            logger.error(f"[Polymarket] 시장 목록 조회 실패: {e}")
-            return []
+            logger.debug(f"[API] search={tag} 조회 오류: {e}")
+
+        return results
+
+    async def get_all_crypto_markets(self) -> List[Dict]:
+        """
+        폴리마켓 Crypto 섹션 전체 시장 조회
+        5Min / 15Min / 1Hour 등 단기 계약 포함
+        """
+        session = await self.get_session()
+        results = []
+        seen_ids = set()
+
+        # 폴리마켓 Crypto 카테고리 직접 쿼리
+        search_queries = [
+            {"tag_slug": "crypto"},
+            {"tag_slug": "bitcoin"},
+            {"tag_slug": "ethereum"},
+            {"tag_slug": "cryptocurrency"},
+            {"category": "crypto"},
+            {"search": "bitcoin price"},
+            {"search": "ethereum price"},
+            {"search": "btc above"},
+            {"search": "btc below"},
+            {"search": "eth above"},
+            {"search": "eth below"},
+            {"search": "will bitcoin"},
+            {"search": "will ethereum"},
+            {"search": "sol above"},
+            {"search": "xrp above"},
+        ]
+
+        url = f"{config.POLYMARKET_GAMMA_URL}/markets"
+
+        for query_params in search_queries:
+            try:
+                params = {
+                    "active": "true",
+                    "closed": "false",
+                    "limit": 100,
+                    **query_params,
+                }
+                async with session.get(url, params=params) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        markets = data if isinstance(data, list) else data.get("markets", [])
+                        for m in markets:
+                            mid = m.get("conditionId") or m.get("id") or ""
+                            if mid and mid not in seen_ids:
+                                seen_ids.add(mid)
+                                results.append(m)
+                        if markets:
+                            logger.debug(f"[API] {query_params}: {len(markets)}개 발견")
+            except Exception as e:
+                logger.debug(f"[API] {query_params} 오류: {e}")
+            await asyncio.sleep(0.1)  # rate limit
+
+        # CLOB API에서도 시장 목록 조회
+        clob_markets = await self._get_clob_markets()
+        for m in clob_markets:
+            mid = m.get("condition_id") or m.get("conditionId") or ""
+            if mid and mid not in seen_ids:
+                seen_ids.add(mid)
+                # CLOB 형식을 Gamma 형식으로 변환
+                results.append(self._normalize_clob_market(m))
+
+        logger.info(f"[API] 전체 크립토 시장 조회: {len(results)}개")
+        return results
+
+    async def _get_clob_markets(self) -> List[Dict]:
+        """CLOB API에서 활성 시장 조회"""
+        session = await self.get_session()
+        results = []
+        try:
+            url = f"{config.POLYMARKET_CLOB_URL}/markets"
+            params = {"active": "true", "limit": 100}
+            async with session.get(url, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    markets = data if isinstance(data, list) else data.get("data", [])
+                    results = markets if isinstance(markets, list) else []
+        except Exception as e:
+            logger.debug(f"[API] CLOB 시장 조회 오류: {e}")
+        return results
+
+    def _normalize_clob_market(self, clob_market: Dict) -> Dict:
+        """CLOB API 마켓 형식 → Gamma 형식으로 변환"""
+        tokens = clob_market.get("tokens", [])
+        yes_token = ""
+        no_token = ""
+        for t in tokens:
+            outcome = t.get("outcome", "").upper()
+            if outcome == "YES":
+                yes_token = t.get("token_id", "")
+            elif outcome == "NO":
+                no_token = t.get("token_id", "")
+
+        return {
+            "conditionId": clob_market.get("condition_id", ""),
+            "question": clob_market.get("question", ""),
+            "endDate": clob_market.get("end_date_iso", ""),
+            "clobTokenIds": [yes_token, no_token] if yes_token else [],
+            "active": clob_market.get("active", True),
+            "closed": clob_market.get("closed", False),
+            "liquidity": clob_market.get("liquidity", 0),
+        }
 
     # ─────────────────────────────────────────
     # 오더북 조회 (현재 오즈)
     # ─────────────────────────────────────────
     async def get_orderbook(self, token_id: str) -> Optional[Dict]:
-        """
-        특정 계약의 현재 오더북 조회
-        token_id: Polymarket 계약 토큰 ID
-        반환: {"best_bid": float, "best_ask": float, "spread": float}
-        """
+        """특정 계약의 현재 오더북 조회"""
         session = await self.get_session()
         url = f"{config.POLYMARKET_CLOB_URL}/book"
         params = {"token_id": token_id}
@@ -98,7 +223,6 @@ class PolymarketClient:
         best_ask = float(asks[0]["price"]) if asks else 1.0
         mid = (best_bid + best_ask) / 2 if (best_bid and best_ask) else 0.5
 
-        # 유동성 계산 (상위 5레벨 합산)
         bid_liquidity = sum(float(b["size"]) for b in bids[:5])
         ask_liquidity = sum(float(a["size"]) for a in asks[:5])
         total_liquidity_usd = (bid_liquidity + ask_liquidity) * mid
@@ -113,9 +237,6 @@ class PolymarketClient:
             "asks": asks[:10],
         }
 
-    # ─────────────────────────────────────────
-    # 시장 정보 조회
-    # ─────────────────────────────────────────
     async def get_market_info(self, condition_id: str) -> Optional[Dict]:
         """특정 시장의 상세 정보 조회"""
         session = await self.get_session()

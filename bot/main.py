@@ -114,44 +114,57 @@ class HFTBot:
 
     def _fetch_live_balance(self) -> float:
         """실제 폴리마켓 CLOB 잔고 조회"""
-        try:
-            from py_clob_client.client import ClobClient
-            from py_clob_client.clob_types import ApiCreds
-            from py_clob_client.constants import POLYGON
+        import requests
+        import hmac
+        import hashlib
+        import base64
+        from datetime import datetime, timezone
 
-            client = ClobClient(
-                host=config.POLYMARKET_CLOB_URL,
-                chain_id=POLYGON,
-                key=config.POLYGON_PRIVATE_KEY,
-                creds=ApiCreds(
-                    api_key=config.POLYMARKET_API_KEY,
-                    api_secret=config.POLYMARKET_API_SECRET,
-                    api_passphrase=config.POLYMARKET_API_PASSPHRASE,
-                ),
-                signature_type=0,
+        try:
+            ts = str(int(datetime.now(timezone.utc).timestamp()))
+            msg = ts + "GET" + "/balance"
+            secret_bytes = base64.b64decode(config.POLYMARKET_API_SECRET)
+            sig = hmac.new(secret_bytes, msg.encode(), hashlib.sha256).digest()
+            sig_b64 = base64.b64encode(sig).decode()
+
+            headers = {
+                "POLY-API-KEY": config.POLYMARKET_API_KEY,
+                "POLY-SIGNATURE": sig_b64,
+                "POLY-TIMESTAMP": ts,
+                "POLY-PASSPHRASE": config.POLYMARKET_API_PASSPHRASE,
+            }
+            resp = requests.get(
+                f"{config.POLYMARKET_CLOB_URL}/balance",
+                headers=headers,
+                timeout=5,
             )
-            balance_info = client.get_balance()
-            # 응답 형식: {"balance": "107.05"} 또는 숫자
-            if isinstance(balance_info, dict):
-                balance = float(balance_info.get("balance", 0))
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, dict):
+                    balance = float(data.get("balance", data.get("USDC", 0)))
+                else:
+                    balance = float(data)
+                if balance > 0:
+                    logger.info(f"[Bot] 실계좌 잔고: ${balance:.2f}")
+                    return balance
             else:
-                balance = float(balance_info)
-            if balance > 0:
-                logger.info(f"[Bot] 실계좌 잔고 조회: ${balance:.2f}")
-                return balance
+                logger.warning(f"[Bot] 잔고 조회 HTTP {resp.status_code}: {resp.text[:100]}")
         except Exception as e:
-            logger.warning(f"[Bot] 잔고 조회 실패: {e} → DB에서 복원 시도")
-            # 폴백: DB에서 마지막 라이브 거래 잔고
-            try:
-                recent = self.db.get_recent_trades(1)
-                if recent:
-                    live_trades = [t for t in recent if t.get("mode") == "REAL"]
-                    if live_trades and live_trades[0].get("capital_after"):
-                        capital = float(live_trades[0]["capital_after"])
-                        if capital > 0:
-                            return capital
-            except Exception:
-                pass
+            logger.warning(f"[Bot] 잔고 조회 실패: {e}")
+
+        # 폴백: DB에서 마지막 라이브 거래 잔고
+        try:
+            with self.db._get_conn() as conn:
+                row = conn.execute(
+                    "SELECT capital_after FROM trades WHERE mode='REAL' AND status='CLOSED' ORDER BY exit_time DESC LIMIT 1"
+                ).fetchone()
+                if row and row[0]:
+                    logger.info(f"[Bot] DB에서 라이브 잔고 복원: ${float(row[0]):.2f}")
+                    return float(row[0])
+        except Exception:
+            pass
+
+        logger.warning("[Bot] 잔고 조회 실패 → $100 사용. 실제 잔고와 다를 수 있음")
         return config.INITIAL_SEED
 
     # ─────────────────────────────────────────
