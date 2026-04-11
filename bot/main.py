@@ -346,7 +346,7 @@ def main():
             sys.exit(1)
         print("실거래 모드로 시작합니다. 실제 자금이 사용됩니다!")
         confirm = input("계속하려면 'YES'를 입력하세요: ")
-        if confirm != "YES":
+        if confirm.strip().upper() != "YES":
             sys.exit(0)
         config.PAPER_TRADING = False
 
