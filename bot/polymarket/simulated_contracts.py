@@ -47,7 +47,7 @@ class LaggingOddsModel:
         self.window_sec = float(config.PRICE_WINDOW_SEC)  # 15.0초
         self._price_history: deque = deque()
         self._current_odds: float = 0.50
-        self.k = 0.5  # 시그모이드 기울기
+        self.k = 2.0  # 시그모이드 기울기 (급격한 스파이크 감지용)
 
     def update_price(self, price: float, timestamp: float):
         self._price_history.append(PriceTick(price, timestamp))

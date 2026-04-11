@@ -116,8 +116,8 @@ class RiskManager:
             )
             return
 
-        # 규칙 2: 연속 손실 5회 → 오늘 중단
-        if self.consecutive_losses >= 5:
+        # 규칙 2: 연속 손실 8회 → 오늘 중단
+        if self.consecutive_losses >= 8:
             self._halt(f"연속 손실 {self.consecutive_losses}회 → 오늘 거래 중단")
             return
 
