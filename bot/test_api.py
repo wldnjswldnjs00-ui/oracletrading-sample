@@ -1,9 +1,10 @@
 """
-Polymarket 이벤트 내용 상세 진단
+Polymarket 타겟 마켓 직접 검색
 실행: python test_api.py
 """
 import asyncio
 import aiohttp
+import json
 
 GAMMA_URL = "https://gamma-api.polymarket.com"
 CLOB_URL  = "https://clob.polymarket.com"
@@ -20,75 +21,133 @@ HEADERS = {
 }
 
 
+async def search_gamma(session, keyword, limit=10, active_filter=True):
+    url = f"{GAMMA_URL}/markets"
+    params = {"search": keyword, "limit": limit}
+    if active_filter:
+        params["active"] = "true"
+        params["closed"] = "false"
+    async with session.get(url, params=params) as resp:
+        if resp.status == 200:
+            data = await resp.json()
+            return data if isinstance(data, list) else data.get("markets", data.get("data", []))
+        return []
+
+
+async def search_gamma_events(session, keyword, limit=20):
+    url = f"{GAMMA_URL}/events"
+    params = {"search": keyword, "limit": limit}
+    async with session.get(url, params=params) as resp:
+        if resp.status == 200:
+            data = await resp.json()
+            return data if isinstance(data, list) else data.get("events", data.get("data", []))
+        return []
+
+
 async def main():
     timeout = aiohttp.ClientTimeout(total=20)
     async with aiohttp.ClientSession(timeout=timeout, headers=HEADERS) as session:
 
         print("=" * 60)
-        print("Polymarket 이벤트 상세 진단")
+        print("Polymarket 타겟 마켓 직접 검색")
         print("=" * 60)
 
-        # ── 1. bitcoin 이벤트 안에 뭐가 있는지 확인 ─────────────────
-        print("\n[1] Events 'bitcoin' 검색 - 이벤트 내용 상세")
+        # ── 1. 화면에 보이는 마켓 직접 검색 ─────────────────────────
+        print("\n[1] 화면에 보인 마켓 직접 검색")
+
+        targets = [
+            "BTC 5 Minute",
+            "bitcoin above april",
+            "Bitcoin above",
+            "bitcoin price april",
+            "what price will bitcoin hit",
+            "bitcoin hit april",
+            "ethereum above april",
+        ]
+
+        for kw in targets:
+            # active 필터 없이 검색
+            markets = await search_gamma(session, kw, limit=5, active_filter=False)
+            if markets:
+                print(f"\n  '{kw}' → {len(markets)}개 발견:")
+                for m in markets[:3]:
+                    q = (m.get("question","") or m.get("title",""))[:65]
+                    end = m.get("endDateIso", m.get("endDate","?"))[:16]
+                    act = m.get("active","?")
+                    clo = m.get("closed","?")
+                    tok = m.get("clobTokenIds", [])
+                    print(f"    [{end}] active={act} closed={clo} | {q}")
+                    print(f"      tokens: {tok[:1]}")
+            else:
+                print(f"  '{kw}' → 0개")
+
+        # ── 2. Events에서 직접 검색 ──────────────────────────────────
+        print("\n[2] Events 직접 검색")
+
+        event_targets = [
+            "BTC 5 Minute",
+            "bitcoin above",
+            "bitcoin price april",
+            "crypto price",
+            "btc above",
+        ]
+
+        for kw in event_targets:
+            events = await search_gamma_events(session, kw, limit=5)
+            if events:
+                print(f"\n  events '{kw}' → {len(events)}개:")
+                for ev in events[:2]:
+                    print(f"    title: {ev.get('title','')[:60]}")
+                    print(f"    slug:  {ev.get('slug','')[:50]}")
+                    ms = ev.get("markets", [])
+                    print(f"    markets 수: {len(ms)}")
+                    for m in ms[:3]:
+                        q = (m.get("question","") or m.get("title",""))[:60]
+                        end = m.get("endDateIso", m.get("endDate","?"))[:16]
+                        print(f"      [{end}] {q}")
+                        print(f"        tokens: {m.get('clobTokenIds',[])[:1]}")
+            else:
+                print(f"  events '{kw}' → 0개")
+
+        # ── 3. Gamma API active=false 포함 전체 최신 100개 ────────────
+        print("\n[3] Gamma API 최신 100개 (active 필터 없음) - 크립토만")
         try:
-            url = f"{GAMMA_URL}/events"
-            params = {"active": "true", "closed": "false", "limit": 5, "search": "bitcoin"}
+            url = f"{GAMMA_URL}/markets"
+            params = {"limit": 100, "order": "createdAt", "ascending": "false"}
             async with session.get(url, params=params) as resp:
-                print(f"  HTTP: {resp.status}")
                 if resp.status == 200:
                     data = await resp.json()
-                    events = data if isinstance(data, list) else data.get("events", data.get("data", []))
-                    print(f"  이벤트 수: {len(events)}")
-                    for i, ev in enumerate(events[:5]):
-                        print(f"\n  [이벤트 {i+1}]")
-                        print(f"    title: {ev.get('title','')[:60]}")
-                        print(f"    slug: {ev.get('slug','')[:40]}")
-                        markets = ev.get("markets", [])
-                        print(f"    markets 개수: {len(markets)}")
-                        for m in markets[:3]:
-                            print(f"      - {(m.get('question','') or m.get('title',''))[:60]}")
-                            print(f"        endDate: {m.get('endDateIso', m.get('endDate','?'))[:20]}")
-                            print(f"        tokens: {m.get('clobTokenIds','')}")
+                    markets = data if isinstance(data, list) else data.get("markets", data.get("data", []))
+                    COIN = ["bitcoin","btc","ethereum","eth","solana","xrp","bnb","avax","doge"]
+                    PRICE = ["above","below","hit","reach","$","price","up or down"]
+                    crypto = [
+                        m for m in markets
+                        if any(k in (m.get("question","") or "").lower() for k in COIN)
+                        and any(k in (m.get("question","") or "").lower() for k in PRICE)
+                    ]
+                    print(f"  총 {len(markets)}개 중 크립토 가격 관련: {len(crypto)}개")
+                    for m in crypto[:10]:
+                        q = (m.get("question",""))[:65]
+                        end = m.get("endDateIso", m.get("endDate","?"))[:16]
+                        act = m.get("active","?")
+                        acc = m.get("acceptingOrders","?")
+                        print(f"  [{end}] active={act} accepting={acc} | {q}")
+                else:
+                    print(f"  HTTP {resp.status}")
         except Exception as e:
             print(f"  오류: {e}")
 
-        # ── 2. 크립토 카테고리로 이벤트 검색 ───────────────────────
-        print("\n[2] Events 카테고리/태그 검색 시도")
-        for param, val in [
-            ("tag_slug", "crypto"),
-            ("category", "crypto"),
-            ("tag_slug", "cryptocurrency"),
-            ("tag_slug", "bitcoin"),
-        ]:
-            try:
-                url = f"{GAMMA_URL}/events"
-                params = {"active": "true", "closed": "false", "limit": 3, param: val}
-                async with session.get(url, params=params) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        events = data if isinstance(data, list) else data.get("events", data.get("data", []))
-                        print(f"  {param}={val}: {len(events)}개")
-                        for ev in events[:2]:
-                            print(f"    - {ev.get('title','')[:50]}")
-                    else:
-                        print(f"  {param}={val}: HTTP {resp.status}")
-            except Exception as e:
-                print(f"  오류 ({param}={val}): {e}")
-
-        # ── 3. 현재 활성 CLOB 마켓 중 미래 날짜 크립토만 필터 ────────
-        print("\n[3] CLOB 활성 마켓 중 미래 날짜 + 크립토 가격 계약")
-        import datetime
-        now = datetime.datetime.utcnow()
+        # ── 4. CLOB에서 accepting_orders=true 마켓만 ────────────────
+        print("\n[4] CLOB accepting_orders 마켓 검색")
+        COIN = ["bitcoin","btc","ethereum","eth","solana","xrp","bnb","avax","doge"]
+        PRICE = ["above","below","hit","reach","$","price","up or down","up","down"]
         found = []
         next_cursor = ""
 
-        COIN = ["bitcoin","btc","ethereum","eth","solana","xrp","bnb","avax","doge","matic","polygon"]
-        PRICE = ["above","below","over","under","hit","reach","$","usd","price","higher","lower"]
-
-        for page in range(30):  # 최대 30,000개 조회
+        for page in range(5):
             try:
                 url = f"{CLOB_URL}/markets"
-                p: dict = {"active": "true", "limit": 1000}
+                p: dict = {"limit": 1000}
                 if next_cursor:
                     p["next_cursor"] = next_cursor
                 async with session.get(url, params=p) as resp:
@@ -96,65 +155,33 @@ async def main():
                         break
                     data = await resp.json()
                     markets = data.get("data", data) if isinstance(data, dict) else data
-                    next_cursor = data.get("next_cursor", "") if isinstance(data, dict) else ""
+                    next_cursor = data.get("next_cursor","") if isinstance(data, dict) else ""
 
                     for m in markets:
-                        q = m.get("question", "")
-                        end_iso = m.get("end_date_iso", "")
-                        # 미래 날짜인지 확인
-                        if end_iso:
-                            try:
-                                end_dt = datetime.datetime.fromisoformat(end_iso.replace("Z","+00:00").replace("+00:00",""))
-                                if end_dt <= now:
-                                    continue  # 만료됨
-                            except:
-                                continue
-                        else:
+                        # accepting_orders 체크
+                        if not m.get("accepting_orders", False):
                             continue
-                        # 크립토 + 가격 키워드 확인
+                        q = m.get("question","")
                         ql = q.lower()
                         if any(k in ql for k in COIN) and any(k in ql for k in PRICE):
                             found.append(m)
 
                     if not next_cursor or not markets:
-                        print(f"  {page+1}페이지 완료, 총 {(page+1)*1000}개 조회")
                         break
-                    if (page+1) % 5 == 0:
-                        print(f"  {page+1}페이지... (누적 {len(found)}개 발견)")
             except Exception as e:
                 print(f"  오류: {e}")
                 break
 
-        print(f"\n  ★ 미래 만기 크립토 가격 계약: {len(found)}개")
-        for m in found[:15]:
+        print(f"  accepting_orders=true 크립토 가격 계약: {len(found)}개")
+        for m in found[:10]:
             q = m.get("question","")[:65]
             end = m.get("end_date_iso","?")[:16]
             tkns = m.get("tokens",[])
-            print(f"    [{end}] {q}")
+            print(f"  [{end}] {q}")
             if tkns:
-                print(f"      YES: {tkns[0].get('token_id','')[:30]}...")
-
-        # ── 4. Gamma API에서 negRisk 크립토 마켓 탐색 ───────────────
-        print("\n[4] Gamma negRisk 크립토 마켓 탐색")
-        try:
-            url = f"{GAMMA_URL}/markets"
-            params = {"active": "true", "closed": "false", "limit": 100, "neg_risk": "true"}
-            async with session.get(url, params=params) as resp:
-                print(f"  neg_risk=true HTTP: {resp.status}")
-                if resp.status == 200:
-                    data = await resp.json()
-                    markets = data if isinstance(data, list) else data.get("markets", data.get("data", []))
-                    print(f"  수신: {len(markets)}개")
-                    crypto = [m for m in markets if any(k in (m.get("question","") or "").lower() for k in COIN)]
-                    print(f"  코인 관련: {len(crypto)}개")
-                    for m in crypto[:5]:
-                        print(f"    - {(m.get('question',''))[:60]}")
-        except Exception as e:
-            print(f"  오류: {e}")
+                print(f"    YES token: {tkns[0].get('token_id','')[:25]}...")
 
         print("\n" + "=" * 60)
-        print(f"최종: 거래 가능한 미래 크립토 가격 계약 {len(found)}개")
-        print("=" * 60)
 
 
 asyncio.run(main())
