@@ -74,63 +74,90 @@ async def main():
     timeout = aiohttp.ClientTimeout(total=10)
     async with aiohttp.ClientSession(timeout=timeout, headers=HEADERS) as session:
 
-        coins = ["btc", "eth", "sol", "xrp", "bnb", "doge"]
-
-        for offset in [0, -1, 1]:  # 현재, 이전, 다음 라운드
-            round_start = ((now // 300) + offset) * 300
-            slot_label = {0: "현재", -1: "이전", 1: "다음"}[offset]
-
-            slug = f"btc-updown-5m-{round_start}"
-            url  = f"{GAMMA_URL}/events/{slug}"
-
-            try:
-                async with session.get(url) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        title  = data.get("title", "?")
-                        ms     = data.get("markets", [])
-                        print(f"\n  ✓ [{slot_label}] {slug}")
-                        print(f"    제목: {title}")
-                        print(f"    markets: {len(ms)}개")
-                        for m in ms[:2]:
-                            q = m.get("question","")[:55]
-                            tok = m.get("clobTokenIds", [])
-                            print(f"      Q: {q}")
-                            print(f"      YES token: {tok[0][:20] if tok else '없음'}...")
-                            print(f"      NO  token: {tok[1][:20] if len(tok)>1 else '없음'}...")
-                    else:
-                        print(f"  [{slot_label}] {slug}: HTTP {resp.status}")
-            except Exception as e:
-                print(f"  [{slot_label}] 오류: {e}")
-
-        # 다른 코인도 현재 라운드 확인
-        print(f"\n  [현재 라운드 다른 코인]")
         round_start = (now // 300) * 300
-        for coin in ["eth", "sol", "xrp"]:
-            slug = f"{coin}-updown-5m-{round_start}"
-            url  = f"{GAMMA_URL}/events/{slug}"
-            try:
-                async with session.get(url) as resp:
-                    status = "✓" if resp.status == 200 else f"✗ HTTP {resp.status}"
-                    print(f"    {coin}: {status} ({slug})")
-            except Exception as e:
-                print(f"    {coin}: 오류 {e}")
+        slug = f"btc-updown-5m-{round_start}"
+        print(f"  현재 라운드 슬러그: {slug}")
 
-        # 15분, 1일 마켓도 확인
-        print(f"\n  [15분 / 1일 마켓]")
-        for tf_name, tf_sec in [("15m", 900), ("1d", 86400)]:
-            rs = (now // tf_sec) * tf_sec
-            slug = f"btc-updown-{tf_name}-{rs}"
-            url  = f"{GAMMA_URL}/events/{slug}"
+        # 여러 URL 형식 시도
+        url_formats = [
+            f"{GAMMA_URL}/events/{slug}",
+            f"{GAMMA_URL}/events?slug={slug}",
+            f"{GAMMA_URL}/markets?slug={slug}",
+            f"{GAMMA_URL}/markets/{slug}",
+            f"{GAMMA_URL}/events?market_slug={slug}",
+            f"{GAMMA_URL}/events?event_slug={slug}",
+        ]
+
+        found_data = None
+        for url in url_formats:
             try:
                 async with session.get(url) as resp:
-                    if resp.status == 200:
+                    status = resp.status
+                    if status == 200:
                         data = await resp.json()
-                        print(f"    ✓ BTC {tf_name}: {data.get('title','?')[:50]}")
+                        found_data = data
+                        print(f"\n  ✓ 성공! URL: {url.replace(GAMMA_URL,'')}")
+                        # 데이터 구조 확인
+                        if isinstance(data, list):
+                            print(f"    리스트 {len(data)}개")
+                            if data:
+                                item = data[0]
+                                print(f"    첫번째 키: {list(item.keys())[:6]}")
+                                print(f"    title: {item.get('title','?')[:50]}")
+                                ms = item.get("markets", [])
+                                print(f"    markets: {len(ms)}개")
+                                for m in ms[:3]:
+                                    print(f"      Q: {m.get('question','?')[:55]}")
+                                    tok = m.get("clobTokenIds", [])
+                                    if tok:
+                                        print(f"      UP  token: {tok[0][:25]}...")
+                                        if len(tok) > 1:
+                                            print(f"      DOWN token: {tok[1][:25]}...")
+                        elif isinstance(data, dict):
+                            print(f"    키: {list(data.keys())[:6]}")
+                            print(f"    title: {data.get('title','?')[:50]}")
+                            ms = data.get("markets", [])
+                            print(f"    markets: {len(ms)}개")
+                            for m in ms[:3]:
+                                print(f"      Q: {m.get('question','?')[:55]}")
+                                tok = m.get("clobTokenIds", [])
+                                if tok:
+                                    print(f"      UP  token: {tok[0][:25]}...")
+                                    if len(tok) > 1:
+                                        print(f"      DOWN token: {tok[1][:25]}...")
+                        break
                     else:
-                        print(f"    ✗ BTC {tf_name}: HTTP {resp.status}")
+                        print(f"  {url.replace(GAMMA_URL,'')}: HTTP {status}")
             except Exception as e:
-                print(f"    BTC {tf_name}: 오류 {e}")
+                print(f"  오류: {e}")
+
+        # 다른 코인도 현재 라운드 확인 (성공한 URL 형식 사용)
+        if found_data:
+            print(f"\n  [ETH, SOL, XRP 현재 라운드]")
+            for coin in ["eth", "sol", "xrp"]:
+                s = f"{coin}-updown-5m-{round_start}"
+                url = f"{GAMMA_URL}/events?slug={s}"
+                try:
+                    async with session.get(url) as resp:
+                        mark = "✓" if resp.status == 200 else f"✗ {resp.status}"
+                        print(f"    {coin}: {mark}")
+                except:
+                    pass
+        else:
+            print("\n  ↓ 슬러그 접근 실패 - 다른 방법으로 찾아봄")
+            # 폴리마켓 내부 API 시도
+            for alt in [
+                f"https://polymarket.com/api/event/btc-updown-5m-{round_start}",
+                f"{GAMMA_URL}/events?slug=btc-updown-5m-{round_start}&active=true",
+            ]:
+                try:
+                    async with session.get(alt) as resp:
+                        if resp.status == 200:
+                            print(f"  ✓ {alt[:60]}")
+                        else:
+                            print(f"  HTTP {resp.status}: {alt[:60]}")
+                except Exception as e:
+                    print(f"  오류: {e}")
 
     print("\n" + "=" * 55)
     print("완료. 위 결과 보내줘.")
