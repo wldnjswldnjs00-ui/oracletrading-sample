@@ -150,43 +150,13 @@ class PolymarketClient:
 
         logger.info(f"[API] Gamma 페이지네이션: {len(results)}개 수집")
 
-        # ── 2단계: 크립토 키워드 검색 보완 ──────────────────────────────
-        crypto_keywords = [
-            "bitcoin", "ethereum", "btc", "eth",
-            "btc above", "btc below", "eth above", "eth below",
-            "will bitcoin", "will ethereum",
-            "solana", "sol above", "xrp above",
-            "crypto price",
-        ]
+        # ── 2단계: /events 엔드포인트 크립토 시장 탐색 ─────────────────
+        event_markets = await self._get_event_markets(seen_ids)
+        results.extend(event_markets)
+        if event_markets:
+            logger.info(f"[API] events 엔드포인트: {len(event_markets)}개 추가")
 
-        for keyword in crypto_keywords:
-            try:
-                params = {
-                    "active": "true",
-                    "closed": "false",
-                    "limit":  100,
-                    "search": keyword,
-                }
-                async with session.get(url, params=params) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        markets = data if isinstance(data, list) else data.get("markets", data.get("data", []))
-                        added = 0
-                        for m in markets:
-                            mid = m.get("conditionId") or m.get("id") or ""
-                            if mid and mid not in seen_ids:
-                                seen_ids.add(mid)
-                                results.append(m)
-                                added += 1
-                        if added:
-                            logger.debug(f"[API] 검색 '{keyword}': {added}개 추가")
-                    else:
-                        logger.debug(f"[API] 검색 '{keyword}' HTTP {resp.status}")
-            except Exception as e:
-                logger.debug(f"[API] 검색 '{keyword}' 오류: {e}")
-            await asyncio.sleep(0.05)
-
-        # ── 3단계: CLOB API 보완 ──────────────────────────────────────
+        # ── 3단계: CLOB API 보완 (1000개 이상 페이지네이션) ──────────
         clob_markets = await self._get_clob_markets()
         clob_added = 0
         for m in clob_markets:
@@ -199,13 +169,55 @@ class PolymarketClient:
         logger.info(f"[API] 전체 크립토 시장 최종: {len(results)}개 (CLOB {clob_added}개 포함)")
         return results
 
+    async def _get_event_markets(self, seen_ids: set) -> List[Dict]:
+        """
+        /events 엔드포인트로 크립토 이벤트 그룹 탐색
+        각 이벤트 안에 여러 가격 예측 계약이 묶여 있는 경우 포함
+        """
+        session = await self.get_session()
+        results = []
+        url = f"{config.POLYMARKET_GAMMA_URL}/events"
+
+        crypto_searches = [
+            "bitcoin", "ethereum", "crypto price",
+            "btc above", "btc below", "eth above", "eth below",
+            "solana price", "xrp price", "doge",
+        ]
+
+        for search in crypto_searches:
+            try:
+                params = {
+                    "active":  "true",
+                    "closed":  "false",
+                    "limit":   20,
+                    "search":  search,
+                }
+                async with session.get(url, params=params) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        events = data if isinstance(data, list) else data.get("events", data.get("data", []))
+                        for event in events:
+                            # 이벤트 안에 포함된 markets 배열 파싱
+                            for m in event.get("markets", []):
+                                mid = m.get("conditionId") or m.get("id") or ""
+                                if mid and mid not in seen_ids:
+                                    seen_ids.add(mid)
+                                    results.append(m)
+                    elif resp.status != 404:
+                        logger.debug(f"[API] events search HTTP {resp.status}")
+            except Exception as e:
+                logger.debug(f"[API] events '{search}' 오류: {e}")
+            await asyncio.sleep(0.05)
+
+        return results
+
     async def _get_clob_markets(self) -> List[Dict]:
         """CLOB API에서 활성 시장 조회 (페이지네이션)"""
         session = await self.get_session()
         results = []
         next_cursor = ""
 
-        for _ in range(5):   # 최대 500개
+        for _ in range(20):   # 최대 2000개
             try:
                 url = f"{config.POLYMARKET_CLOB_URL}/markets"
                 params: dict = {"active": "true", "limit": 100}

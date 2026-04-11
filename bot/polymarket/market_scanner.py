@@ -82,18 +82,27 @@ class MarketScanner:
             await asyncio.sleep(self._scan_interval)
 
     # 심볼 → 검색 키워드 매핑
+    # 주의: "sol", "link", "dot", "pol" 같은 단독 단어는 오탐 많음 → 더 구체적인 키워드 사용
     SYMBOL_KEYWORDS = {
         "BTC":  ["btc", "bitcoin"],
         "ETH":  ["eth", "ethereum"],
-        "SOL":  ["sol", "solana"],
+        "SOL":  ["solana", " sol "],          # 공백으로 감싸서 단독 단어만 매칭
         "BNB":  ["bnb", "binance coin", "binancecoin"],
         "XRP":  ["xrp", "ripple"],
-        "AVAX": ["avax", "avalanche"],
-        "LINK": ["link", "chainlink"],
-        "POL":  ["pol", "matic", "polygon"],
-        "DOT":  ["dot", "polkadot"],
+        "AVAX": ["avax"],                      # "avalanche"는 하키팀 오탐 → 제외
+        "LINK": ["chainlink", " link "],       # "link"만 쓰면 hyperlink 오탐
+        "POL":  ["polygon", "matic"],          # "pol" 단독은 오탐
+        "DOT":  ["polkadot", " dot "],         # "dot" 단독은 오탐
         "DOGE": ["doge", "dogecoin"],
     }
+
+    # 가격 예측 컨텍스트 키워드 (이게 있어야 진짜 가격 예측 계약)
+    # 스포츠/정치 시장 구별용: "Colorado Avalanche vs Kings"는 "$" 없음
+    PRICE_CONTEXT_KEYWORDS = [
+        "above", "below", "over", "under", "higher", "lower",
+        "hit", "reach", "exceed", "surpass",
+        "$", "usd", "price", "worth", "target",
+    ]
 
     async def _discover_markets(self):
         """10개 코인 가격 예측 계약 탐색 - 모든 방법 동원"""
@@ -166,7 +175,13 @@ class MarketScanner:
         if not question:
             return None
 
-        q_lower = question.lower()
+        q_lower = " " + question.lower() + " "  # 양쪽 공백으로 감싸서 단어 경계 매칭
+
+        # 가격 예측 컨텍스트 확인 (스포츠/정치 시장 제외)
+        # "$", "above", "below" 등이 없으면 가격 예측 계약 아님
+        has_price_context = any(k in q_lower for k in self.PRICE_CONTEXT_KEYWORDS)
+        if not has_price_context:
+            return None
 
         # 10개 코인 중 어느 것인지 확인
         symbol = None
