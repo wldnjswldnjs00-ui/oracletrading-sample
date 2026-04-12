@@ -129,7 +129,7 @@ class HFTBot:
                     api_secret=config.POLYMARKET_API_SECRET,
                     api_passphrase=config.POLYMARKET_API_PASSPHRASE,
                 ),
-                signature_type=0,
+                signature_type=2,   # Gnosis Safe proxy wallet (Polymarket web)
             )
             logger.info("[Bot] CLOB client initialized OK")
 

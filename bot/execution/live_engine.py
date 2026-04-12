@@ -34,7 +34,7 @@ def _build_clob_client():
                 api_secret=config.POLYMARKET_API_SECRET,
                 api_passphrase=config.POLYMARKET_API_PASSPHRASE,
             ),
-            signature_type=0,   # EOA 지갑
+            signature_type=2,   # Gnosis Safe proxy wallet (Polymarket web)
         )
     except Exception as e:
         logger.error(f"[Live] CLOB 클라이언트 초기화 실패: {e}")
