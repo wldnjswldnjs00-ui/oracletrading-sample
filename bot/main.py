@@ -114,6 +114,7 @@ class HFTBot:
 
     def _fetch_live_balance(self) -> float:
         """실제 폴리마켓 CLOB 잔고 조회 (py-clob-client 사용)"""
+        logger.info("[Bot] Fetching live CLOB balance...")
         try:
             from py_clob_client.client import ClobClient
             from py_clob_client.clob_types import ApiCreds
@@ -130,41 +131,39 @@ class HFTBot:
                 ),
                 signature_type=0,
             )
+            logger.info("[Bot] CLOB client initialized OK")
 
-            # 정답 메서드: get_balance_allowance(asset_type=COLLATERAL)
             try:
                 from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
                 params = BalanceAllowanceParams(asset_type=AssetType.COLLATERAL)
                 raw = client.get_balance_allowance(params)
+                logger.info(f"[Bot] Raw balance response: {raw}")
                 if raw is not None:
-                    # 응답: {"balance": "107050000", "allowance": "...", "asset_type": "COLLATERAL"}
-                    # balance는 6자리 소수 (USDC = 1e6 단위)
                     bal_raw = raw.get("balance", 0) if isinstance(raw, dict) else raw
-                    balance = float(bal_raw) / 1_000_000  # 마이크로 USDC → USDC
+                    balance = float(bal_raw) / 1_000_000
                     if balance <= 0:
-                        balance = float(bal_raw)  # 이미 달러 단위면 그대로
+                        balance = float(bal_raw)
+                    logger.info(f"[Bot] Polymarket balance: ${balance:.2f}")
                     if balance > 0:
-                        logger.info(f"[Bot] 실계좌 잔고: ${balance:.2f}")
                         return balance
             except Exception as e1:
-                logger.debug(f"[Bot] get_balance_allowance() 실패: {e1}")
+                logger.warning(f"[Bot] get_balance_allowance() failed: {e1}")
 
         except Exception as e:
-            logger.warning(f"[Bot] CLOB 클라이언트 초기화 실패: {e}")
+            logger.warning(f"[Bot] CLOB client init failed: {e}")
 
-        # 폴백: DB에서 마지막 라이브 거래 잔고
         try:
             with self.db._get_conn() as conn:
                 row = conn.execute(
                     "SELECT capital_after FROM trades WHERE mode='REAL' AND status='CLOSED' ORDER BY exit_time DESC LIMIT 1"
                 ).fetchone()
                 if row and row[0]:
-                    logger.info(f"[Bot] DB에서 라이브 잔고 복원: ${float(row[0]):.2f}")
+                    logger.info(f"[Bot] Restored from DB: ${float(row[0]):.2f}")
                     return float(row[0])
         except Exception:
             pass
 
-        logger.warning("[Bot] 잔고 조회 실패 → config.INITIAL_SEED 사용")
+        logger.warning(f"[Bot] Balance fetch failed -> using INITIAL_SEED ${config.INITIAL_SEED:.2f}")
         return config.INITIAL_SEED
 
     # ─────────────────────────────────────────
