@@ -71,7 +71,7 @@ class LiveEngine(PaperEngine):
                 order_args = OrderArgs(
                     token_id=token_id,
                     price=round(price, 4),
-                    size=round(size, 4),
+                    size=round(size, 2),   # CLOB: maker amount 최대 2자리
                     side=side,
                 )
                 signed = self._clob.create_order(order_args)
