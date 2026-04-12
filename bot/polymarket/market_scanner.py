@@ -28,6 +28,8 @@ class MarketContract:
 
     yes_odds: float = 0.5
     no_odds: float = 0.5
+    yes_bid: float = 0.5    # YES 토큰 최우선 매수호가 (SELL 시 사용)
+    yes_ask: float = 0.5    # YES 토큰 최우선 매도호가 (BUY 시 사용)
     liquidity_usd: float = 0.0
     last_updated: float = field(default_factory=time.time)
 
@@ -39,6 +41,16 @@ class MarketContract:
     def is_active(self) -> bool:
         return self.time_remaining_sec > 30
 
+    @property
+    def no_bid(self) -> float:
+        """NO 토큰 최우선 매수호가 ≈ 1 - YES 매도호가"""
+        return max(0.01, 1.0 - self.yes_ask)
+
+    @property
+    def no_ask(self) -> float:
+        """NO 토큰 최우선 매도호가 ≈ 1 - YES 매수호가"""
+        return min(0.99, 1.0 - self.yes_bid)
+
     def target_token_id(self, direction: str) -> str:
         """
         UP 신호 → YES 토큰 (BTC 상승에 베팅)
@@ -48,7 +60,16 @@ class MarketContract:
         return self.yes_token_id if direction == "UP" else self.no_token_id
 
     def target_odds(self, direction: str) -> float:
+        """신호 생성용 mid 오즈 (갭 계산에 사용)"""
         return self.yes_odds if direction == "UP" else self.no_odds
+
+    def target_entry_price(self, direction: str) -> float:
+        """실거래 진입 가격 = ASK 매수호가 (FOK BUY에 사용)"""
+        return self.yes_ask if direction == "UP" else self.no_ask
+
+    def target_exit_price(self, direction: str) -> float:
+        """실거래 청산 가격 = BID 매도호가 (FOK SELL에 사용)"""
+        return self.yes_bid if direction == "UP" else self.no_bid
 
 
 class MarketScanner:
@@ -102,6 +123,7 @@ class MarketScanner:
         "above", "below", "over", "under", "higher", "lower",
         "hit", "reach", "exceed", "surpass",
         "$", "usd", "price", "worth", "target",
+        "up or down", "updown",   # BTC Up or Down 5분 계약 포함
     ]
 
     async def _discover_markets(self):
@@ -360,8 +382,11 @@ class MarketScanner:
     async def _update_contract_odds(self, contract: MarketContract):
         book = await self.client.get_orderbook(contract.yes_token_id)
         if book:
-            contract.yes_odds     = book["mid"]
-            contract.no_odds      = 1.0 - book["mid"]
+            contract.yes_odds      = book["mid"]
+            contract.no_odds       = 1.0 - book["mid"]
+            # bid/ask 저장 → 실거래 주문 가격으로 사용
+            contract.yes_bid       = book["best_bid"]   # SELL YES 시 사용
+            contract.yes_ask       = book["best_ask"]   # BUY YES 시 사용
             contract.liquidity_usd = book["liquidity_usd"]
             contract.last_updated  = time.time()
 

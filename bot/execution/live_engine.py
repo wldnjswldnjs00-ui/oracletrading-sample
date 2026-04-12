@@ -98,23 +98,25 @@ class LiveEngine(PaperEngine):
             logger.warning("[Live] 진입 불가: 유동성 미흡")
             return None
 
-        entry_odds = contract.target_odds(signal.direction)
-        if entry_odds <= 0:
+        # 실거래: mid 오즈(갭계산용) vs 실제 ASK 가격(주문용) 구분
+        entry_odds  = contract.target_odds(signal.direction)        # mid (PnL 계산 기준)
+        order_price = contract.target_entry_price(signal.direction)  # ASK (실제 BUY 주문가)
+        if order_price <= 0:
             return None
 
         token_id = contract.target_token_id(signal.direction)
-        shares   = size / entry_odds   # 매수할 계약 수량
+        shares   = size / order_price   # ASK 가격 기준 수량
 
         logger.info(
             f"[Live] 주문 제출: {signal.symbol} {signal.direction} | "
-            f"토큰 {token_id[:10]}... | ${size:.2f} @ {entry_odds:.4f} | "
+            f"토큰 {token_id[:10]}... | ${size:.2f} @ ask={order_price:.4f} (mid={entry_odds:.4f}) | "
             f"{shares:.2f}주"
         )
 
-        # CLOB 매수 주문 (FOK)
+        # CLOB 매수 주문 (FOK) - ASK 가격으로 제출해야 체결됨
         resp = await self._place_order(
             token_id=token_id,
-            price=entry_odds,
+            price=order_price,
             size=shares,
             side="BUY",
         )
@@ -141,7 +143,7 @@ class LiveEngine(PaperEngine):
             trade_id=trade_id,
             symbol=signal.symbol,
             direction=signal.direction,
-            entry_odds=entry_odds,
+            entry_odds=order_price,   # ASK 가격을 기준으로 PnL 계산
             size_usd=size,
             shares=shares,
             entry_time=time.time(),
@@ -181,7 +183,8 @@ class LiveEngine(PaperEngine):
             await asyncio.sleep(check_interval)
 
             contract      = position.contract
-            current_odds  = contract.target_odds(position.direction)
+            # 청산 시 BID 가격(실제 SELL 체결 가격)으로 모니터링
+            current_odds  = contract.target_exit_price(position.direction)
             if current_odds <= 0:
                 continue
 
@@ -214,38 +217,38 @@ class LiveEngine(PaperEngine):
             return
 
         token_id = position.contract.target_token_id(position.direction)
+        # exit_odds는 BID 가격 (target_exit_price로 계산됨) - SELL FOK에 적합
+        sell_price = max(0.01, exit_odds)
 
         logger.info(
             f"[Live] 청산 시도 [{position.trade_id}] {reason} | "
-            f"목표오즈: {exit_odds:.4f} | 수량: {position.shares:.4f}주"
+            f"bid가격: {sell_price:.4f} | 수량: {position.shares:.4f}주"
         )
 
-        # CLOB 매도 주문 (FOK)
+        # CLOB 매도 주문 (FOK) - BID 가격으로 제출해야 체결됨
         resp = await self._place_order(
             token_id=token_id,
-            price=exit_odds,
+            price=sell_price,
             size=position.shares,
             side="SELL",
         )
 
-        actual_exit_odds = exit_odds
+        actual_exit_odds = sell_price
 
         if resp:
             status = resp.get("status", "")
             if status not in ("matched", "delayed"):
-                # 청산 실패 → 최우선가로 재시도
-                logger.warning(f"[Live] 청산 FOK 미체결 ({status}) → 재시도")
+                # 청산 실패 → 매도호가 더 낮춰서 재시도 (BID보다 낮게 = 시장가에 가깝게)
+                logger.warning(f"[Live] 청산 FOK 미체결 ({status}) → bid-0.02로 재시도")
                 await asyncio.sleep(0.2)
-                # 오즈를 조금 낮춰서 재시도 (유동성 확보)
-                retry_odds = max(0.01, exit_odds - 0.02)
-                resp2 = await self._place_order(token_id, retry_odds, position.shares, "SELL")
+                retry_price = max(0.01, sell_price - 0.02)
+                resp2 = await self._place_order(token_id, retry_price, position.shares, "SELL")
                 if resp2 and resp2.get("status") in ("matched", "delayed"):
-                    actual_exit_odds = retry_odds
+                    actual_exit_odds = retry_price
                 else:
-                    # 최종 실패 → 현재 오즈로 강제 청산 (손실 감수)
-                    logger.error(f"[Live] 청산 재시도 실패 → 강제 청산")
+                    logger.error(f"[Live] 청산 재시도 실패 → 강제 청산 기록")
         else:
-            logger.error("[Live] 청산 주문 응답 없음 → 강제 청산")
+            logger.error("[Live] 청산 주문 응답 없음 → 강제 청산 기록")
 
         # 포지션 닫기 (공통 로직)
         await self._close_position(position, actual_exit_odds, reason)
