@@ -363,16 +363,24 @@ class PolymarketClient:
             return None
 
     def _parse_orderbook(self, raw: Dict) -> Dict:
-        """오더북 파싱 → 최우선 매수/매도호가 추출"""
+        """오더북 파싱 → 최우선 매수/매도호가 추출
+
+        Polymarket CLOB sort order:
+          bids: ascending  (lowest first)  → best bid  = bids[-1]
+          asks: descending (highest first) → best ask  = asks[-1]
+        """
         bids = raw.get("bids", [])
         asks = raw.get("asks", [])
 
-        best_bid = float(bids[0]["price"]) if bids else 0.0
-        best_ask = float(asks[0]["price"]) if asks else 1.0
+        # bids sorted ascending: last element is best (highest) bid
+        best_bid = float(bids[-1]["price"]) if bids else 0.0
+        # asks sorted descending: last element is best (lowest) ask
+        best_ask = float(asks[-1]["price"]) if asks else 1.0
         mid = (best_bid + best_ask) / 2 if (best_bid and best_ask) else 0.5
 
-        bid_liquidity = sum(float(b["size"]) for b in bids[:5])
-        ask_liquidity = sum(float(a["size"]) for a in asks[:5])
+        # top-5 liquidity: best bids are at the end, best asks are at the end
+        bid_liquidity = sum(float(b["size"]) for b in bids[-5:])
+        ask_liquidity = sum(float(a["size"]) for a in asks[-5:])
         total_liquidity_usd = (bid_liquidity + ask_liquidity) * mid
 
         return {
