@@ -365,19 +365,30 @@ class MarketScanner:
             logger.debug(f"[Scanner] 만기 제거: {c.symbol} {c.direction} '{c.question[:40]}'")
 
     async def _odds_update_loop(self):
+        _log_counter = 0
         while self._running:
             try:
                 await self._update_all_odds()
+                _log_counter += 1
+                # Every 10 cycles (~30s): log summary of all contracts
+                if _log_counter % 10 == 0:
+                    liquid = [(c.symbol, c.direction, c.yes_bid, c.yes_ask, c.liquidity_usd)
+                              for c in self.active_contracts.values()]
+                    for sym, d, bid, ask, liq in sorted(liquid, key=lambda x: -x[4]):
+                        spread = ask - bid
+                        logger.info(f"[Odds] {sym} {d}: bid={bid:.3f} ask={ask:.3f} spread={spread:.3f} liq=${liq:.1f}")
             except Exception as e:
-                logger.debug(f"[Scanner] 오즈 업데이트 오류: {e}")
+                logger.info(f"[Scanner] 오즈 업데이트 오류: {e}")
             await asyncio.sleep(self._odds_interval)
 
     async def _update_all_odds(self):
         contracts = list(self.active_contracts.values())
         if not contracts:
             return
-        tasks = [self._update_contract_odds(c) for c in contracts]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        # Sequential with small delay to avoid CLOB rate limiting
+        for c in contracts:
+            await self._update_contract_odds(c)
+            await asyncio.sleep(0.05)
 
     async def _update_contract_odds(self, contract: MarketContract):
         book = await self.client.get_orderbook(contract.yes_token_id)
@@ -387,9 +398,9 @@ class MarketScanner:
             # bid/ask 저장 → 실거래 주문 가격으로 사용
             contract.yes_bid       = book["best_bid"]   # SELL YES 시 사용
             contract.yes_ask       = book["best_ask"]   # BUY YES 시 사용
-            # 스프레드 > 30%p = 미개장 계약 → 유동성 0 처리 (pre-market 필터)
+            # 스프레드 > 95%p = 완전히 빈 오더북 → 유동성 0 처리
             _spread = contract.yes_ask - contract.yes_bid
-            contract.liquidity_usd = book["liquidity_usd"] if _spread <= 0.30 else 0.0
+            contract.liquidity_usd = book["liquidity_usd"] if _spread <= 0.95 else 0.0
             contract.last_updated  = time.time()
 
     def get_contracts_for(self, symbol: str) -> List[MarketContract]:

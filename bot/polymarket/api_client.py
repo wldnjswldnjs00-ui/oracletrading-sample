@@ -356,9 +356,10 @@ class PolymarketClient:
                     data = await resp.json()
                     return self._parse_orderbook(data)
                 else:
+                    logger.info(f"[Orderbook] HTTP {resp.status} for token {token_id[:12]}...")
                     return None
         except Exception as e:
-            logger.debug(f"[Polymarket] 오더북 조회 실패 ({token_id[:8]}...): {e}")
+            logger.info(f"[Orderbook] ERROR {token_id[:12]}...: {e}")
             return None
 
     def _parse_orderbook(self, raw: Dict) -> Dict:
