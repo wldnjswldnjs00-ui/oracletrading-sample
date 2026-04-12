@@ -62,7 +62,7 @@ def make_capital_panel(stats: dict) -> Panel:
     table.add_row("일일 수익률",  f"[{ret_color}]{daily_ret:>+10.2f}%[/]")
     table.add_row("드로다운",     f"[{dd_color}]{drawdown:>10.2f}%[/]")
 
-    return Panel(table, title="[bold]💰 자본 현황[/]", border_style="cyan")
+    return Panel(table, title="[bold cyan][ CAPITAL ][/]", border_style="cyan")
 
 
 def make_trade_stats_panel(stats: dict) -> Panel:
@@ -87,7 +87,7 @@ def make_trade_stats_panel(stats: dict) -> Panel:
     table.add_row("─" * 10,        "─" * 10)
     table.add_row("오픈 포지션",   f"[yellow]{open_p:>8}개[/]")
 
-    return Panel(table, title="[bold]📊 거래 통계[/]", border_style="green")
+    return Panel(table, title="[bold green][ TRADES ][/]", border_style="green")
 
 
 def make_risk_panel(risk_stats: dict) -> Panel:
@@ -116,7 +116,7 @@ def make_risk_panel(risk_stats: dict) -> Panel:
     table.add_row("일일 손실",     f"[{loss_color}]{daily_loss_pct:>+.2f}%[/]")
     table.add_row("손실 한도",     f"-{limit_pct:.0f}%")
 
-    return Panel(table, title="[bold]🛡 리스크 상태[/]", border_style="red")
+    return Panel(table, title="[bold red][ RISK ][/]", border_style="red")
 
 
 def make_recent_trades_panel(trades: list) -> Panel:
@@ -151,7 +151,7 @@ def make_recent_trades_panel(trades: list) -> Panel:
             t.get("exit_reason") or "",
         )
 
-    return Panel(table, title="[bold]📋 최근 거래[/]", border_style="blue")
+    return Panel(table, title="[bold blue][ RECENT TRADES ][/]", border_style="blue")
 
 
 def make_market_panel(scanner_summary: str, price_info: dict) -> Panel:
@@ -172,7 +172,7 @@ def make_market_panel(scanner_summary: str, price_info: dict) -> Panel:
     table.add_row("", "", "")
     table.add_row("[dim]폴리[/]", f"[dim]{scanner_summary}[/]", "")
 
-    return Panel(table, title="[bold]📈 시장 현황[/]", border_style="magenta")
+    return Panel(table, title="[bold magenta][ MARKET ][/]", border_style="magenta")
 
 
 class Dashboard:
