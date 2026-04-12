@@ -387,9 +387,9 @@ class MarketScanner:
             # bid/ask 저장 → 실거래 주문 가격으로 사용
             contract.yes_bid       = book["best_bid"]   # SELL YES 시 사용
             contract.yes_ask       = book["best_ask"]   # BUY YES 시 사용
-            # 스프레드 > 10%p = 미개장 계약 → 유동성 0 처리 (pre-market 필터)
+            # 스프레드 > 30%p = 미개장 계약 → 유동성 0 처리 (pre-market 필터)
             _spread = contract.yes_ask - contract.yes_bid
-            contract.liquidity_usd = book["liquidity_usd"] if _spread <= 0.10 else 0.0
+            contract.liquidity_usd = book["liquidity_usd"] if _spread <= 0.30 else 0.0
             contract.last_updated  = time.time()
 
     def get_contracts_for(self, symbol: str) -> List[MarketContract]:

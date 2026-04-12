@@ -229,10 +229,10 @@ class HFTBot:
                 logger.debug(f"[Live] {symbol} {direction}: 활성계약 없음 (활성={len(self.scanner.active_contracts)}개)")
                 return
             if contract.liquidity_usd < config.MIN_MARKET_LIQUIDITY_USD:
-                logger.debug(
-                    f"[Live] {symbol} {direction}: 유동성 미흡 "
+                logger.info(
+                    f"[Live] {symbol} {direction}: skip liquidity "
                     f"${contract.liquidity_usd:,.0f} < ${config.MIN_MARKET_LIQUIDITY_USD:,.0f} "
-                    f"(ask={contract.yes_ask:.3f} bid={contract.yes_bid:.3f})"
+                    f"ask={contract.yes_ask:.3f} bid={contract.yes_bid:.3f} spread={contract.yes_ask-contract.yes_bid:.3f}"
                 )
                 return
         else:

@@ -39,7 +39,7 @@ ODDS_CONVERGENCE_PCT = 0.003  # 오즈 수렴 감지 임계치 (0.3%p 수렴 시
 STOP_LOSS_PCT        = 0.03   # 오즈가 역방향으로 3%p 이상 벌어지면 손절
 
 # 유동성 체크
-MIN_MARKET_LIQUIDITY_USD = 1_000    # 최소 시장 유동성 $1,000 (페이퍼 트레이딩 기준)
+MIN_MARKET_LIQUIDITY_USD = 50       # 최소 시장 유동성 $50 (실거래 기준)
 FILL_SPEED_THRESHOLD_SEC = 0.5      # 풀시드 주문 0.5초 내 체결 = 유동성 양호 판단
 
 # ─────────────────────────────────────────
